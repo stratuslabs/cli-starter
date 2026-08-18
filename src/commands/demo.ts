@@ -81,7 +81,9 @@ const promptsCommand = defineCommand({
         { value: 'red', label: 'Red', hint: 'warm' },
         { value: 'green', label: 'Green', hint: 'calm' },
         { value: 'blue', label: 'Blue', hint: 'cool' },
-        { value: 'ultraviolet', label: 'Ultraviolet', hint: 'not available', disabled: true },
+        // No `hint` here: the renderer already appends "(unavailable)" to a
+        // disabled label, so a hint saying the same thing reads as a bug.
+        { value: 'ultraviolet', label: 'Ultraviolet', disabled: true },
       ],
       allowBack: true,
     });
