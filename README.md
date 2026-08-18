@@ -88,7 +88,7 @@ src/
   app.ts          ← the only file that knows your brand. Edit this first.
   main.ts         ← the command registry. Add your commands here.
   bin.ts          ← the executable. Almost nothing in it.
-  commands/       ← yours. Replace these.
+  commands/       ← yours. notes.ts is the worked example; replace these.
   kit/            ← the framework. You should not need to edit this.
 test/
   support/        ← the harness and a runnable mock auth server
@@ -133,8 +133,11 @@ export const listCommand = defineCommand({
 ```
 
 Register it in `src/main.ts`. Help, `--json`, `--quiet`, colour, and error
-handling come with it. The full walkthrough is in
-[docs/adding-a-command.md](docs/adding-a-command.md).
+handling come with it.
+
+`src/commands/notes.ts` is that command, written out in full and runnable
+against the mock server, with its tests in `test/notes.test.ts`. Copy it. The
+walkthrough is in [docs/adding-a-command.md](docs/adding-a-command.md).
 
 ## The server side
 

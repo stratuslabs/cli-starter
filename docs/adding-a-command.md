@@ -3,6 +3,25 @@
 Two steps: declare it, register it. Everything else — help, `--json`,
 `--quiet`, colour, exit codes, error rendering — comes with it.
 
+**There is a working one to copy.** `src/commands/notes.ts` is a real command
+that authenticates, calls an API, and renders a table or JSON, with tests in
+`test/notes.test.ts`. It runs today against the mock server:
+
+```bash
+npm run mock-server            # terminal 1
+npm run kit -- login           # terminal 2
+npm run kit -- notes
+npm run kit -- notes --status draft --json | jq -r '.notes[].id'
+```
+
+The data is invented, and deliberately not borrowed from a public API — an
+example that depends on someone else's endpoint rots the first time they change
+it, and it would put a network call in a test suite that otherwise has none.
+Copy the file, rename it, and delete the original (or let `npm run rebrand`
+remove it).
+
+The rest of this page is the same thing, explained.
+
 ## 1. Declare it
 
 `src/commands/posts.ts`:

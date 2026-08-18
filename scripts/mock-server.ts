@@ -16,6 +16,15 @@ const PORT = Number(process.env['PORT'] ?? 8787);
 
 const server = await startMockAuthServer(PORT);
 
+/**
+ * A pre-issued token, so you can exercise commands without signing in first.
+ *
+ * Useful when you are iterating on a command and do not want a browser round
+ * trip every time you restart the server.
+ */
+const SEEDED_TOKEN = 'tok_dev';
+server.issuedTokens.add(SEEDED_TOKEN);
+
 process.stdout.write(
   [
     `Mock auth server listening on ${server.url}`,
@@ -25,6 +34,11 @@ process.stdout.write(
     '',
     '  Try:  npm run kit -- login',
     '        npm run kit -- whoami',
+    '        npm run kit -- notes',
+    '',
+    `  Or skip signing in — this token is already valid:`,
+    `      export KIT_BASE_URL=${server.url}`,
+    `      export KIT_TOKEN=${SEEDED_TOKEN}`,
     '',
   ].join('\n'),
 );

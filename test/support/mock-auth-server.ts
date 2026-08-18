@@ -40,6 +40,27 @@ export interface PendingAuthorization {
   state: string;
 }
 
+/**
+ * Fictitious data for the worked example in `src/commands/notes.ts`.
+ *
+ * Deliberately made up rather than proxied to a real public API: an example
+ * that depends on someone else's service breaks when they change it, and it
+ * would put a network call in a test suite that otherwise has none.
+ */
+export interface MockNote {
+  id: string;
+  title: string;
+  status: 'draft' | 'scheduled' | 'published';
+  views: number;
+}
+
+export const NOTES: MockNote[] = [
+  { id: 'n_8f21', title: 'Dark mode is here', status: 'published', views: 12480 },
+  { id: 'n_7c02', title: 'Faster search', status: 'published', views: 9310 },
+  { id: 'n_6b55', title: 'Scheduled digests', status: 'scheduled', views: 0 },
+  { id: 'n_5a19', title: 'Pricing update', status: 'draft', views: 0 },
+];
+
 const json = (response: import('node:http').ServerResponse, status: number, body: unknown): void => {
   const payload = JSON.stringify(body);
   response.statusCode = status;
@@ -177,6 +198,34 @@ export const startMockAuthServer = async (port = 0): Promise<MockAuthServer> => 
         name: 'Ada Lovelace',
         email: 'ada@example.com',
         account: { id: 'acct_1', name: 'Analytical Engines', tier: 'pro' },
+      });
+      return;
+    }
+
+    /* ---- notes: a fictitious resource, for the worked example ------------ */
+    // Not part of the auth contract — this exists so `src/commands/notes.ts`
+    // has something real to talk to. Delete it with the example.
+    if (url.pathname.startsWith('/api/v1/notes')) {
+      const auth = request.headers.authorization ?? '';
+      if (!issuedTokens.has(auth.replace(/^Bearer\s+/i, ''))) {
+        json(response, 401, { error: 'Invalid or expired token' });
+        return;
+      }
+
+      const id = url.pathname.slice('/api/v1/notes'.length).replace(/^\//, '');
+      if (id !== '') {
+        const note = NOTES.find((candidate) => candidate.id === id);
+        if (note === undefined) {
+          json(response, 404, { error: `No note with id ${id}.` });
+          return;
+        }
+        json(response, 200, { note });
+        return;
+      }
+
+      const status = url.searchParams.get('status');
+      json(response, 200, {
+        notes: status === null ? NOTES : NOTES.filter((note) => note.status === status),
       });
       return;
     }

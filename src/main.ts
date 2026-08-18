@@ -15,6 +15,7 @@ import { demoCommand } from './commands/demo.ts';
 import { doctorCommand } from './commands/doctor.ts';
 import { loginCommand } from './commands/login.ts';
 import { logoutCommand } from './commands/logout.ts';
+import { notesCommand } from './commands/notes.ts';
 import { whoamiCommand } from './commands/whoami.ts';
 
 /**
@@ -46,7 +47,8 @@ export const program: ProgramDef = {
       env: baseUrlEnvName(APP),
     },
   },
-  commands: [loginCommand, logoutCommand, whoamiCommand, doctorCommand, demoCommand],
+  // notesCommand is the worked example; the rest is framework plumbing.
+  commands: [notesCommand, loginCommand, logoutCommand, whoamiCommand, doctorCommand, demoCommand],
   ...(APP.footer === undefined ? {} : { footer: APP.footer }),
 };
 

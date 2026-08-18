@@ -109,8 +109,8 @@ try {
     initial: `${binary}-cli`,
   });
 
-  const dropDemo = await prompter.confirm({
-    message: 'Delete the demo command and its tests?',
+  const dropExamples = await prompter.confirm({
+    message: 'Delete the example commands (demo, notes) and their tests?',
     initial: true,
   });
 
@@ -163,13 +163,31 @@ try {
     }
   }
 
-  if (dropDemo) {
-    await rm(join(root, 'src/commands/demo.ts'), { force: true });
-    await rm(join(root, 'test/demo.test.ts'), { force: true });
+  if (dropExamples) {
+    for (const file of [
+      'src/commands/demo.ts',
+      'test/demo.test.ts',
+      'src/commands/notes.ts',
+      'test/notes.test.ts',
+    ]) {
+      await rm(join(root, file), { force: true });
+    }
     await edit('src/main.ts', (text) =>
       text
         .replace(/import \{ demoCommand \} from '\.\/commands\/demo\.ts';\n/, '')
+        .replace(/import \{ notesCommand \} from '\.\/commands\/notes\.ts';\n/, '')
+        .replace(/\n\s*\/\/ notesCommand is the worked example[^\n]*\n/, '\n')
+        .replace(/notesCommand,\s*/, '')
         .replace(/,\s*demoCommand/, ''),
+    );
+    // The notes endpoints in the mock server exist only for that example.
+    await edit('test/support/mock-auth-server.ts', (text) =>
+      text
+        .replace(
+          /\n    \/\* ---- notes[\s\S]*?\n    \}\n(?=\n    \/\* ---- revoke)/,
+          '\n',
+        )
+        .replace(/\n\/\*\*\n \* Fictitious data for the worked example[\s\S]*?\n\];\n/, '\n'),
     );
   }
 
