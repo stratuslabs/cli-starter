@@ -39,10 +39,17 @@ export interface DeviceLoginOptions {
   now?(): number;
 }
 
-const defaultSleep = (ms: number): Promise<void> =>
+/**
+ * Deliberately **not** `unref`'d.
+ *
+ * An unref'd timer does not hold the event loop open, so once the initial HTTP
+ * connection goes idle Node is free to exit while this promise is still
+ * pending — the process dies mid-poll and device sign-in never completes. The
+ * wait between polls is work, not background upkeep.
+ */
+export const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    timer.unref?.();
+    setTimeout(resolve, ms);
   });
 
 const postForm = async (

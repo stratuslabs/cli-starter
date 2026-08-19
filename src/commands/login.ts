@@ -144,8 +144,15 @@ export const loginCommand = defineCommand({
     const base = resolveBaseUrl(APP, ctx.flags);
 
     if (!ctx.flags.boolean('force')) {
-      const existing = await openSession(ctx);
-      if (existing.token !== undefined) {
+      // This block asks one question — "are you already signed in and does it
+      // work?" — so anything that stops it answering means no, and sign-in
+      // proceeds. Letting openSession throw here makes `login` the one command
+      // an expired credential breaks, and its own error tells you to run
+      // `login`: a loop out of which only --force, undocumented for this,
+      // would get you. The same applies to a stored token bound to another
+      // endpoint, which is precisely what you are here to replace.
+      const existing = await openSession(ctx).catch(() => undefined);
+      if (existing?.token !== undefined) {
         const identity = await fetchIdentity(existing).catch(() => undefined);
         // Already signed in and the token still works: say so and stop, rather
         // than silently minting a second credential.

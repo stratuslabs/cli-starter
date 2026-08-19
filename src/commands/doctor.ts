@@ -11,7 +11,7 @@
 
 import { access, stat } from 'node:fs/promises';
 
-import { APP, baseUrlEnvName, configEnvName, resolveBaseUrl, tokenEnvName } from '../app.ts';
+import { APP, baseUrlEnvName, resolveBaseUrl, tokenEnvName } from '../app.ts';
 import { defineCommand } from '../kit/command.ts';
 import { credentialsPath, loadCredentials } from '../kit/credentials.ts';
 import { detectColorLevel, detectUnicode, isCI, isInteractive } from '../kit/env.ts';
@@ -53,7 +53,7 @@ export const doctorCommand = defineCommand({
     'Prints the resolved configuration with its provenance, checks the credential ' +
     'store, and confirms the endpoint is reachable. Exits non-zero if anything is wrong.',
   flags: {
-    offline: { type: 'boolean', summary: 'skip the checks that need the network' },
+    offline: { type: 'boolean', summary: 'skip the checks that need the network (local checks still run)' },
   },
   examples: [{ cmd: 'doctor --json', note: 'machine-readable, for a health check' }],
 
@@ -94,7 +94,12 @@ export const doctorCommand = defineCommand({
         brand: APP.brand,
         cwd: ctx.env.cwd,
         homeDir: ctx.env.homeDir,
-        explicitPath: ctx.env.processEnv[configEnvName(APP)],
+        // Through the flag, not the raw variable: `--config` is declared with
+        // its env fallback, so this is the one place precedence is decided.
+        // Reading the variable directly makes `doctor --config <path>` report
+        // on a file the user did not name — and pass when that file is missing,
+        // which is the exact question they ran doctor to answer.
+        explicitPath: ctx.flags.string('config'),
       },
       exists,
     );
@@ -146,31 +151,39 @@ export const doctorCommand = defineCommand({
       });
     }
 
-    // ---- reachability ------------------------------------------------------
-    if (!ctx.flags.boolean('offline')) {
-      const session = await openSession(ctx);
-      if (session.token === undefined) {
+    // ---- sign-in -----------------------------------------------------------
+    //
+    // Whether a token resolves at all is a local question, so --offline skips
+    // only the request that confirms it. Skipping the whole block lets doctor
+    // exit 0 on a machine that was never signed in, immediately before every
+    // API command fails with auth.not_signed_in.
+    const session = await openSession(ctx);
+    if (session.token === undefined) {
+      findings.push({
+        label: 'sign-in',
+        value: ctx.theme.muted('not signed in'),
+        problem: 'Not signed in.',
+        hint: `Run \`${APP.name} login\`.`,
+      });
+    } else if (ctx.flags.boolean('offline')) {
+      findings.push({
+        label: 'sign-in',
+        value: `${ctx.theme.muted(`token from ${session.tokenSource}`)} ${ctx.theme.muted('(not verified — offline)')}`,
+      });
+    } else {
+      try {
+        const identity = await fetchIdentity(session);
         findings.push({
           label: 'sign-in',
-          value: ctx.theme.muted('not signed in'),
-          problem: 'Not signed in.',
-          hint: `Run \`${APP.name} login\`.`,
+          value: `${identity?.name ?? identity?.email ?? identity?.id ?? 'ok'} ${ctx.theme.muted(`via ${session.tokenSource}`)}`,
         });
-      } else {
-        try {
-          const identity = await fetchIdentity(session);
-          findings.push({
-            label: 'sign-in',
-            value: `${identity?.name ?? identity?.email ?? identity?.id ?? 'ok'} ${ctx.theme.muted(`via ${session.tokenSource}`)}`,
-          });
-        } catch (error) {
-          findings.push({
-            label: 'sign-in',
-            value: ctx.theme.muted('could not be confirmed'),
-            problem: error instanceof Error ? error.message : String(error),
-            hint: `Run \`${APP.name} login\` to sign in again.`,
-          });
-        }
+      } catch (error) {
+        findings.push({
+          label: 'sign-in',
+          value: ctx.theme.muted('could not be confirmed'),
+          problem: error instanceof Error ? error.message : String(error),
+          hint: `Run \`${APP.name} login\` to sign in again.`,
+        });
       }
     }
 

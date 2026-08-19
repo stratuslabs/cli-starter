@@ -13,7 +13,8 @@ import { test } from 'node:test';
 import { APP, baseUrlEnvName, tokenEnvName } from '../src/app.ts';
 import { EXIT } from '../src/kit/errors.ts';
 import { stripAnsi } from '../src/kit/theme.ts';
-import { run } from './support/harness.ts';
+import { saveCredential } from '../src/kit/credentials.ts';
+import { createTempHome, run } from './support/harness.ts';
 
 // Read the brand rather than hard-coding it, so these still pass after
 // `npm run rebrand` — which is the first thing an adopter runs, and the worst
@@ -30,6 +31,17 @@ const endpointEnv = (): Record<string, string> => ({ [BASE_URL_ENV]: ENDPOINT })
 const withToken = (): Record<string, string> => ({ [TOKEN_ENV]: 'tok_test', [BASE_URL_ENV]: ENDPOINT });
 
 const offline = () => Promise.reject(new Error('offline'));
+
+/** A temp home with a credential already saved for ENDPOINT. */
+const signedInHome = async (): Promise<{ path: string; cleanup: () => Promise<void> }> => {
+  const home = await createTempHome();
+  await saveCredential(home.path, APP.brand, 'default', {
+    token: 'tok_test',
+    baseUrl: ENDPOINT,
+    createdAt: new Date().toISOString(),
+  });
+  return home;
+};
 
 test('--help exits 0 and prints to stdout, because it is what was asked for', async () => {
   const result = await run({ argv: ['--help'] });
@@ -143,14 +155,25 @@ test('--quiet silences chrome but not data', async () => {
 });
 
 test('doctor reports provenance for every resolved value', async () => {
-  const result = await run({ argv: ['doctor', '--offline'], processEnv: endpointEnv() });
-  assert.equal(result.exitCode, EXIT.ok, result.output.plain);
-  // "It works locally but not in CI" is nearly always "a different source won",
-  // and only provenance answers it.
-  assert.match(result.output.stdout, new RegExp(`\\$${BASE_URL_ENV}`));
+  // Signed in, because --offline still reports an absent credential as a
+  // problem and this case is about provenance, not health.
+  const home = await signedInHome();
+  try {
+    const result = await run({
+      argv: ['doctor', '--offline'],
+      processEnv: endpointEnv(),
+      homeDir: home.path,
+    });
+    assert.equal(result.exitCode, EXIT.ok, result.output.plain);
+    // "It works locally but not in CI" is nearly always "a different source won",
+    // and only provenance answers it.
+    assert.match(result.output.stdout, new RegExp(`\\$${BASE_URL_ENV}`));
 
-  const viaFlag = await run({ argv: ['doctor', '--offline', '--base-url', 'https://flag.example'] });
-  assert.match(viaFlag.output.stdout, /--base-url/);
+    const viaFlag = await run({ argv: ['doctor', '--offline', '--base-url', 'https://flag.example'] });
+    assert.match(viaFlag.output.stdout, /--base-url/);
+  } finally {
+    await home.cleanup();
+  }
 });
 
 test('doctor exits non-zero when something is actually wrong', async () => {
@@ -160,10 +183,19 @@ test('doctor exits non-zero when something is actually wrong', async () => {
 });
 
 test('doctor --json is machine-readable', async () => {
-  const result = await run({ argv: ['doctor', '--offline', '--json'], processEnv: endpointEnv() });
-  const parsed = JSON.parse(result.output.stdout) as { ok: boolean; findings: { label: string }[] };
-  assert.equal(parsed.ok, true);
-  assert.ok(parsed.findings.some((finding) => finding.label === 'endpoint'));
+  const home = await signedInHome();
+  try {
+    const result = await run({
+      argv: ['doctor', '--offline', '--json'],
+      processEnv: endpointEnv(),
+      homeDir: home.path,
+    });
+    const parsed = JSON.parse(result.output.stdout) as { ok: boolean; findings: { label: string }[] };
+    assert.equal(parsed.ok, true);
+    assert.ok(parsed.findings.some((finding) => finding.label === 'endpoint'));
+  } finally {
+    await home.cleanup();
+  }
 });
 
 test('output wraps to a narrow terminal instead of overflowing it', async () => {

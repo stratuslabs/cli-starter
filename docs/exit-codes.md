@@ -13,7 +13,7 @@ stable and should not be reassigned.
 | `5` | network | The server could not be reached, timed out, or returned a 5xx. |
 | `6` | not found | The named thing does not exist. |
 | `7` | conflict | The named thing exists but is in the wrong state for this operation. |
-| `130` | interrupted | Ctrl-C. The shell convention is 128 + SIGINT. |
+| `130` | interrupted | Ctrl-C. The shell convention is 128 + SIGINT. Includes a request cancelled mid-flight — an abort and a lapsed deadline reach `fetch` in the same shape, and `HttpClient` tells them apart so a cancellation is not reported as a `5`. |
 
 The split that matters most in practice is `4` versus `5`: "your credentials
 are bad, sign in again" and "the network is down, retry later" call for

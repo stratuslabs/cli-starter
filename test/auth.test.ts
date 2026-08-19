@@ -12,7 +12,8 @@ import { readFile, stat } from 'node:fs/promises';
 import { after, before, test } from 'node:test';
 
 import { APP, baseUrlEnvName } from '../src/app.ts';
-import { credentialsPath, type CredentialsFile } from '../src/kit/credentials.ts';
+import { credentialsPath, saveCredential, type CredentialsFile } from '../src/kit/credentials.ts';
+import { EXIT } from '../src/kit/errors.ts';
 import { createTempHome, run } from './support/harness.ts';
 import { startMockAuthServer, type MockAuthServer } from './support/mock-auth-server.ts';
 
@@ -430,6 +431,71 @@ test('a token bound to one endpoint is not sent to another', async () => {
 
     assert.equal(elsewhere.exitCode, 4);
     assert.match(elsewhere.output.plain, /will not be sent to/);
+  } finally {
+    await home.cleanup();
+  }
+});
+
+test('login replaces an expired credential instead of refusing', async () => {
+  const home = await createTempHome();
+  try {
+    await saveCredential(home.path, APP.brand, 'default', {
+      token: 'tok_stale',
+      baseUrl: server.url,
+      // Both before the harness's frozen clock, which is what decides expiry
+      // here — not the wall clock.
+      createdAt: '2025-12-01T00:00:00.000Z',
+      expiresAt: '2025-12-31T00:00:00.000Z',
+    });
+
+    // Without this, `login` is the one command an expired credential breaks,
+    // and the error it raises says to run `login`.
+    const result = await run({
+      argv: ['login'],
+      processEnv: env(),
+      homeDir: home.path,
+      fetch: globalThis.fetch,
+      openExternal: async (url: string) => {
+        await globalThis.fetch(url);
+      },
+    });
+
+    assert.equal(result.exitCode, EXIT.ok, result.output.plain);
+    const stored = (await readStore(home.path)).profiles['default'];
+    assert.notEqual(stored?.token, 'tok_stale');
+    // Whatever expiry the new credential carries, it is not the lapsed one.
+    assert.ok(
+      stored?.expiresAt === undefined ||
+        Date.parse(stored.expiresAt) > Date.parse('2026-01-01T00:00:00.000Z'),
+      String(stored?.expiresAt),
+    );
+  } finally {
+    await home.cleanup();
+  }
+});
+
+test('login works when a stored token is bound to another endpoint', async () => {
+  const home = await createTempHome();
+  try {
+    // Signing in for a new endpoint is the whole reason you would run this.
+    await saveCredential(home.path, APP.brand, 'default', {
+      token: 'tok_elsewhere',
+      baseUrl: 'https://somewhere-else.example',
+      createdAt: '2025-12-01T00:00:00.000Z',
+    });
+
+    const result = await run({
+      argv: ['login'],
+      processEnv: env(),
+      homeDir: home.path,
+      fetch: globalThis.fetch,
+      openExternal: async (url: string) => {
+        await globalThis.fetch(url);
+      },
+    });
+
+    assert.equal(result.exitCode, EXIT.ok, result.output.plain);
+    assert.equal((await readStore(home.path)).profiles['default']?.baseUrl, server.url);
   } finally {
     await home.cleanup();
   }

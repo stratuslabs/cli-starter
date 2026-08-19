@@ -10,6 +10,7 @@ import {
   AuthError,
   CliError,
   ConflictError,
+  InterruptedError,
   NetworkError,
   NotFoundError,
   type CliErrorOptions,
@@ -107,11 +108,17 @@ const errorForStatus = (status: number, message: string, options: CliErrorOption
 };
 
 /** Turn a transport-level failure into something a human can act on. */
-const errorForTransport = (error: unknown, baseUrl: string): CliError => {
+const errorForTransport = (error: unknown, baseUrl: string, timedOut: boolean): CliError => {
   const named = error as { name?: string; code?: string; cause?: { code?: string } };
   const code = named.code ?? named.cause?.code;
 
   if (named.name === 'TimeoutError' || named.name === 'AbortError') {
+    // Ctrl-C and a lapsed deadline both arrive here as an abort, and only the
+    // timeout signal's own state tells them apart. Reporting a cancellation as
+    // a timeout prints a network failure the user did not have and exits 5
+    // where every script expects 130.
+    if (!timedOut) return new InterruptedError();
+
     return new NetworkError('timeout', `Request to ${baseUrl} timed out.`, {
       hint: 'Check your connection, or try again.',
       cause: error,
@@ -192,7 +199,7 @@ export class HttpClient {
         signal: signals.length === 1 ? signals[0] : AbortSignal.any(signals),
       });
     } catch (error) {
-      throw errorForTransport(error, this.options.baseUrl);
+      throw errorForTransport(error, this.options.baseUrl, timeout.aborted);
     }
 
     const text = await response.text();
