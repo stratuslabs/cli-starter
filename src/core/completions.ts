@@ -84,9 +84,19 @@ const flagSpellings = (name: string, flag: FlagDef): string[] =>
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A real command name to use in the generated script's comments.
+ *
+ * Hardcoding one means every adopter's completion file explains itself with a
+ * command their CLI does not have — the template's example leaking downstream.
+ */
+const exampleCommand = (program: ProgramDef): string =>
+  visible(program.commands)[0]?.name ?? '<command>';
+
 export const bashCompletions = (program: ProgramDef): string => {
   const entries = walk(program.commands);
   const fn = `_${program.name.replaceAll(/[^A-Za-z0-9]/g, '_')}`;
+  const example = exampleCommand(program);
 
   const cases = entries.map((entry) => {
     const subcommands = visible(entry.command.subcommands ?? []).map((c) => c.name);
@@ -107,7 +117,7 @@ ${fn}() {
   cur="\${COMP_WORDS[COMP_CWORD]}"
 
   # The command path typed so far, ignoring flags and their values, so that
-  # \`${program.name} --verbose notes <TAB>\` resolves the same as \`${program.name} notes <TAB>\`.
+  # \`${program.name} --verbose ${example} <TAB>\` resolves the same as \`${program.name} ${example} <TAB>\`.
   line=""
   local i
   for (( i=1; i < COMP_CWORD; i++ )); do
@@ -135,6 +145,7 @@ complete -F ${fn} ${program.name}
 export const zshCompletions = (program: ProgramDef): string => {
   const entries = walk(program.commands);
   const fn = `_${program.name.replaceAll(/[^A-Za-z0-9]/g, '_')}`;
+  const example = exampleCommand(program);
 
   const cases = entries.map((entry) => {
     const subcommands = visible(entry.command.subcommands ?? []).map((c) =>
@@ -164,7 +175,7 @@ ${fn}() {
   local i
 
   # The command path typed so far, flags dropped, so that
-  # \`${program.name} --verbose notes <TAB>\` resolves the same as \`${program.name} notes <TAB>\`.
+  # \`${program.name} --verbose ${example} <TAB>\` resolves the same as \`${program.name} ${example} <TAB>\`.
   for (( i = 2; i < CURRENT; i++ )); do
     [[ "\${words[i]}" == -* ]] && continue
     path_words+=("\${words[i]}")

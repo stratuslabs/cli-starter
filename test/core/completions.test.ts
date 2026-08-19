@@ -180,3 +180,21 @@ test('the binary name is taken from the program, not hardcoded', () => {
     assert.doesNotMatch(script, new RegExp(`\\b${program.name}\\b`), `${shell}: leaked the old name`);
   }
 });
+
+test('the generated scripts do not name a command the CLI does not have', () => {
+  // The comment explaining flag-skipping used to say `notes`, which is this
+  // template's example command. Every adopter who deleted it shipped a
+  // completion file documenting a command that did not exist.
+  const other: ProgramDef = {
+    name: 'other',
+    version: '1.0.0',
+    summary: 'a CLI with a different command set',
+    commands: [{ name: 'deploy', summary: 'ship it', run: () => Promise.resolve() }],
+    globalFlags: {},
+  };
+
+  for (const shell of SHELLS) {
+    const script = completionsFor(other, shell);
+    assert.ok(!script.includes('notes'), `${shell} names a command "other" does not have`);
+  }
+});
