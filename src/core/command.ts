@@ -3,7 +3,7 @@
  *
  * One declaration per command, and *everything* is derived from it: argument
  * parsing, validation, dispatch, `--help`, per-command help, and shell
- * completions when those land.
+ * completions.
  *
  * This exists to make one specific bug unrepresentable. In our other CLI the
  * parser is a 515-line if-chain and the help text is a separate hand-written

@@ -11,6 +11,7 @@ import type { ProgramDef } from './core/command.ts';
 import type { CliEnvironment, CliStreams } from './core/env.ts';
 import { GLOBAL_FLAGS, runCli } from './core/run.ts';
 
+import { completionsCommand } from './commands/completions.ts';
 import { demoCommand } from './commands/demo.ts';
 import { doctorCommand } from './commands/doctor.ts';
 import { loginCommand } from './commands/login.ts';
@@ -21,7 +22,7 @@ import { whoamiCommand } from './commands/whoami.ts';
 /**
  * Add your commands here.
  *
- * This array is the whole registry: help, dispatch, and (later) completions all
+ * This array is the whole registry: help, dispatch, and shell completions all
  * read from it, so a command that is listed here cannot be undocumented and a
  * command that is not listed here does not exist.
  */
@@ -48,7 +49,15 @@ export const program: ProgramDef = {
     },
   },
   // notesCommand is the worked example; the rest is framework plumbing.
-  commands: [notesCommand, loginCommand, logoutCommand, whoamiCommand, doctorCommand, demoCommand],
+  commands: [
+    notesCommand,
+    loginCommand,
+    logoutCommand,
+    whoamiCommand,
+    doctorCommand,
+    completionsCommand,
+    demoCommand,
+  ],
   ...(APP.footer === undefined ? {} : { footer: APP.footer }),
 };
 

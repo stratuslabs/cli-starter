@@ -84,7 +84,7 @@ export const postsCommand = defineCommand({
 ## 2. Register it
 
 In `src/main.ts`, import it and add it to `commands`. That array is the whole
-registry — help, dispatch, and completions all read from it.
+registry — help, dispatch, and shell completions all read from it.
 
 That is why there is no separate help text to update: a command that is
 registered is documented, and `test/core/help.test.ts` fails the build if a flag
