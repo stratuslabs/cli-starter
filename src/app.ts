@@ -27,7 +27,7 @@ export interface AppConfig {
   version: string;
   /** One line, shown at the top of `--help`. */
   summary: string;
-  /** Prefix for environment variables: `KIT_TOKEN`, `KIT_BASE_URL`, … */
+  /** Prefix for environment variables: `ACME_TOKEN`, `ACME_BASE_URL`, … */
   envPrefix: string;
   auth: AuthProvider;
   footer?: string;
@@ -38,16 +38,16 @@ export interface AppConfig {
  * freshly cloned template can run `kit login` and get all the way through the
  * browser flow before you have written a line of backend.
  *
- * Override the endpoint with `KIT_BASE_URL` while developing.
+ * Override the endpoint with `ACME_BASE_URL` while developing.
  */
 const DEFAULT_BASE_URL = 'http://127.0.0.1:8787';
 
 export const APP: AppConfig = {
-  name: 'kit',
-  brand: 'kit',
+  name: 'acme',
+  brand: 'acme',
   version: CLI_VERSION,
   summary: 'A polished CLI, ready to be made yours.',
-  envPrefix: 'KIT',
+  envPrefix: 'ACME',
   auth: {
     displayName: 'Example',
     baseUrl: DEFAULT_BASE_URL,
@@ -66,13 +66,13 @@ export const APP: AppConfig = {
 /** The global flag naming the API endpoint. Declared once, in main.ts. */
 export const BASE_URL_FLAG = 'base-url';
 
-/** The environment variable holding a token, e.g. `KIT_TOKEN`. */
+/** The environment variable holding a token, e.g. `ACME_TOKEN`. */
 export const tokenEnvName = (app: AppConfig = APP): string => `${app.envPrefix}_TOKEN`;
 
-/** The environment variable overriding the API endpoint, e.g. `KIT_BASE_URL`. */
+/** The environment variable overriding the API endpoint, e.g. `ACME_BASE_URL`. */
 export const baseUrlEnvName = (app: AppConfig = APP): string => `${app.envPrefix}_BASE_URL`;
 
-/** The environment variable naming a config file, e.g. `KIT_CONFIG`. */
+/** The environment variable naming a config file, e.g. `ACME_CONFIG`. */
 export const configEnvName = (app: AppConfig = APP): string => `${app.envPrefix}_CONFIG`;
 
 /**
@@ -125,7 +125,7 @@ export const resolveBaseUrl = (
   app: AppConfig,
   flags: FlagBag,
 ): { value: string; origin: string; trusted: boolean } => {
-  // The environment fallback lives on the flag definition (`env: KIT_BASE_URL`)
+  // The environment fallback lives on the flag definition (`env: ACME_BASE_URL`)
   // and is applied by the parser, so there is exactly one place that knows the
   // precedence and exactly one that knows the provenance. Re-checking
   // process.env here would produce a second answer that disagrees with help.

@@ -4,7 +4,7 @@
   "description": "A polished CLI template: browser login, arrow-key menus, derived help, and scriptable output.",
   "type": "module",
   "bin": {
-    "kit": "./dist/bin.js"
+    "acme": "./dist/bin.js"
   },
   "engines": {
     "node": ">=22.13 <23 || >=23.4"
@@ -17,7 +17,7 @@
     "build": "tsc -b",
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "test": "node --test --experimental-strip-types --test-timeout=20000 \"test/**/*.test.ts\"",
-    "kit": "node --experimental-strip-types src/bin.ts",
+    "acme": "node --experimental-strip-types src/bin.ts",
     "mock-server": "node --experimental-strip-types scripts/mock-server.ts",
     "rebrand": "node --experimental-strip-types scripts/rebrand.ts"
   },

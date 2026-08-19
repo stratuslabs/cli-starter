@@ -9,9 +9,9 @@ that authenticates, calls an API, and renders a table or JSON, with tests in
 
 ```bash
 npm run mock-server            # terminal 1
-npm run kit -- login           # terminal 2
-npm run kit -- notes
-npm run kit -- notes --status draft --json | jq -r '.notes[].id'
+npm run acme -- login           # terminal 2
+npm run acme -- notes
+npm run acme -- notes --status draft --json | jq -r '.notes[].id'
 ```
 
 The data is invented, and deliberately not borrowed from a public API — an
@@ -189,7 +189,7 @@ frame.
 test('posts lists what the API returns', async () => {
   const result = await run({
     argv: ['posts', '--json'],
-    processEnv: { KIT_TOKEN: 'tok_test', KIT_BASE_URL: 'https://api.example.test' },
+    processEnv: { ACME_TOKEN: 'tok_test', ACME_BASE_URL: 'https://api.example.test' },
     fetch: async () => new Response(JSON.stringify({ posts: [{ id: 'p_1', title: 'Hi' }] })),
   });
 

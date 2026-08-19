@@ -50,9 +50,9 @@ the caller to grep English.
 ## In scripts
 
 ```bash
-if ! output=$(kit whoami --json); then
+if ! output=$(acme whoami --json); then
   case $? in
-    4) kit login ;;
+    4) acme login ;;
     5) echo "service unavailable, retrying later" ;;
     *) echo "$output" >&2; exit 1 ;;
   esac
@@ -69,7 +69,7 @@ Failures print to **stdout** as JSON, so the same pipe carries both outcomes:
   "error": {
     "code": "auth.not_signed_in",
     "message": "You are not signed in to Example.",
-    "hint": "Run `kit login`, or set $KIT_TOKEN."
+    "hint": "Run `acme login`, or set $ACME_TOKEN."
   }
 }
 ```

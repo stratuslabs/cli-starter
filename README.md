@@ -12,12 +12,12 @@ sign-in, arrow-key menus, machine-readable output, and help that cannot drift
 out of date — before you have written a single line of your own.
 
 ```
-$ kit login
+$ acme login
 Opening your browser to sign in to Example…
 ✓ Signed in as Ada Lovelace (Analytical Engines).
-  Token saved to ~/.kit/credentials.json (0600).
+  Token saved to ~/.acme/credentials.json (0600).
 
-$ kit demo output --json | jq '.posts[0].id'
+$ acme demo output --json | jq '.posts[0].id'
 "p_8f21"
 ```
 
@@ -37,8 +37,8 @@ Requires Node `>=22.13 <23 || >=23.4`.
 ```bash
 npm install
 npm run mock-server     # terminal 1 — a stand-in auth server
-npm run kit -- login    # terminal 2 — the real flow, end to end
-npm run kit -- demo prompts
+npm run acme -- login    # terminal 2 — the real flow, end to end
+npm run acme -- demo prompts
 ```
 
 Then make it yours:
@@ -66,8 +66,8 @@ the registry and fails if anything is undocumented. There is no separate help
 string to forget to update.
 
 **Output a script can use.** `--json` puts structured data on stdout and
-nothing else — prompts, spinners, and warnings all go to stderr. `kit list
---json | jq` works, always.
+nothing else — prompts, spinners, and warnings all go to stderr.
+`acme list --json | jq` works, always.
 
 **Errors that say what to do.** Every failure carries a `hint`, and each kind
 gets its own exit code (`2` usage, `3` config, `4` auth, `5` network, …), so a
