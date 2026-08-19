@@ -1,5 +1,5 @@
 /**
- * `kit logout` — sign out.
+ * `acme logout` — sign out.
  *
  * Revokes server-side first, then deletes the local copy. The order matters:
  * if revocation fails, the token is still live and the user needs to know,
@@ -9,8 +9,8 @@
  */
 
 import { APP, tokenEnvName } from '../app.ts';
-import { defineCommand } from '../kit/command.ts';
-import { deleteCredential } from '../kit/credentials.ts';
+import { defineCommand } from '../core/command.ts';
+import { deleteCredential } from '../core/credentials.ts';
 import { openSession, profileName } from './session.ts';
 
 export const logoutCommand = defineCommand({
@@ -18,7 +18,7 @@ export const logoutCommand = defineCommand({
   summary: 'sign out and remove the saved credentials',
   description:
     'Revokes the saved token with the server, then deletes it from ' +
-    '~/.kit/credentials.json. Other profiles are left alone.',
+    `~/.${APP.brand}/credentials.json. Other profiles are left alone.`,
   flags: {
     local: {
       type: 'boolean',

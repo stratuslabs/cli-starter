@@ -25,7 +25,7 @@ if (!nodeVersionSupported(version)) {
 
 const [{ main }, { installSignalHandlers, nodeEnvironment, nodeStreams }] = await Promise.all([
   import('./main.ts'),
-  import('./kit/node-env.ts'),
+  import('./core/node-env.ts'),
 ]);
 
 const controller = installSignalHandlers();

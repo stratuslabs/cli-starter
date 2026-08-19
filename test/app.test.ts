@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { APP, BASE_URL_FLAG, resolveAuthProvider, resolveBaseUrl } from '../src/app.ts';
-import { createFlagBag } from '../src/kit/context.ts';
+import { createFlagBag } from '../src/core/context.ts';
 
 const flags = (value: string) =>
   createFlagBag({ [BASE_URL_FLAG]: value }, { [BASE_URL_FLAG]: 'flag' });

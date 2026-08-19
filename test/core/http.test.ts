@@ -8,8 +8,8 @@ import {
   InterruptedError,
   NetworkError,
   NotFoundError,
-} from '../../src/kit/errors.ts';
-import { formatApiError, HttpClient } from '../../src/kit/http.ts';
+} from '../../src/core/errors.ts';
+import { formatApiError, HttpClient } from '../../src/core/http.ts';
 
 const client = (handler: typeof globalThis.fetch): HttpClient =>
   new HttpClient({ baseUrl: 'https://api.example.test', fetch: handler, userAgent: 'test/1.0' });

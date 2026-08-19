@@ -12,8 +12,8 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 
 import { APP, baseUrlEnvName, tokenEnvName } from '../src/app.ts';
-import { EXIT } from '../src/kit/errors.ts';
-import { stripAnsi } from '../src/kit/theme.ts';
+import { EXIT } from '../src/core/errors.ts';
+import { stripAnsi } from '../src/core/theme.ts';
 import { run } from './support/harness.ts';
 import { startMockAuthServer, type MockAuthServer } from './support/mock-auth-server.ts';
 

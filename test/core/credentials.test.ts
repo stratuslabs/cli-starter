@@ -11,8 +11,8 @@ import {
   sameOrigin,
   saveCredential,
   type CredentialsFile,
-} from '../../src/kit/credentials.ts';
-import { AuthError } from '../../src/kit/errors.ts';
+} from '../../src/core/credentials.ts';
+import { AuthError } from '../../src/core/errors.ts';
 import { createTempHome } from '../support/harness.ts';
 
 const credential = (baseUrl: string, token = 'tok_1') => ({
@@ -24,8 +24,8 @@ const credential = (baseUrl: string, token = 'tok_1') => ({
 test('the credentials file is written 0600', async () => {
   const home = await createTempHome();
   try {
-    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com'));
-    const mode = (await stat(credentialsPath(home.path, 'kit'))).mode & 0o777;
+    await saveCredential(home.path, 'acme', 'default', credential('https://api.example.com'));
+    const mode = (await stat(credentialsPath(home.path, 'acme'))).mode & 0o777;
     assert.equal(mode, 0o600, 'a token readable by other users is the failure this store prevents');
   } finally {
     await home.cleanup();
@@ -35,8 +35,8 @@ test('the credentials file is written 0600', async () => {
 test('the containing directory is 0700', async () => {
   const home = await createTempHome();
   try {
-    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com'));
-    const mode = (await stat(join(home.path, '.kit'))).mode & 0o777;
+    await saveCredential(home.path, 'acme', 'default', credential('https://api.example.com'));
+    const mode = (await stat(join(home.path, '.acme'))).mode & 0o777;
     assert.equal(mode, 0o700);
   } finally {
     await home.cleanup();
@@ -49,12 +49,12 @@ test('an already-loose file is tightened on the next write', async () => {
     // writeFile's `mode` only applies on create, so a file that already exists
     // keeps its permissions unless something explicitly chmods it. This is the
     // regression that the explicit chmod exists for.
-    await mkdir(join(home.path, '.kit'), { recursive: true });
-    const path = credentialsPath(home.path, 'kit');
+    await mkdir(join(home.path, '.acme'), { recursive: true });
+    const path = credentialsPath(home.path, 'acme');
     await writeFile(path, '{"version":1,"profiles":{}}', { mode: 0o644 });
     await chmod(path, 0o644);
 
-    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com'));
+    await saveCredential(home.path, 'acme', 'default', credential('https://api.example.com'));
     assert.equal((await stat(path)).mode & 0o777, 0o600);
   } finally {
     await home.cleanup();
@@ -66,11 +66,11 @@ test('an already-loose directory is tightened too', async () => {
   try {
     // mkdir's mode is ignored for an existing directory. Our other CLI hardens
     // the file on every write but the directory only on creation.
-    await mkdir(join(home.path, '.kit'), { recursive: true, mode: 0o755 });
-    await chmod(join(home.path, '.kit'), 0o755);
+    await mkdir(join(home.path, '.acme'), { recursive: true, mode: 0o755 });
+    await chmod(join(home.path, '.acme'), 0o755);
 
-    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com'));
-    assert.equal((await stat(join(home.path, '.kit'))).mode & 0o777, 0o700);
+    await saveCredential(home.path, 'acme', 'default', credential('https://api.example.com'));
+    assert.equal((await stat(join(home.path, '.acme'))).mode & 0o777, 0o700);
   } finally {
     await home.cleanup();
   }
@@ -79,10 +79,10 @@ test('an already-loose directory is tightened too', async () => {
 test('saving one profile does not clobber the others', async () => {
   const home = await createTempHome();
   try {
-    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com', 'a'));
-    await saveCredential(home.path, 'kit', 'staging', credential('https://staging.example.com', 'b'));
+    await saveCredential(home.path, 'acme', 'default', credential('https://api.example.com', 'a'));
+    await saveCredential(home.path, 'acme', 'staging', credential('https://staging.example.com', 'b'));
 
-    const file = await loadCredentials(home.path, 'kit');
+    const file = await loadCredentials(home.path, 'acme');
     assert.deepEqual(Object.keys(file.profiles).sort(), ['default', 'staging']);
     assert.equal(file.profiles['default']?.token, 'a');
     assert.equal(file.profiles['staging']?.token, 'b');
@@ -94,13 +94,13 @@ test('saving one profile does not clobber the others', async () => {
 test('deleting one profile leaves the rest', async () => {
   const home = await createTempHome();
   try {
-    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com', 'a'));
-    await saveCredential(home.path, 'kit', 'staging', credential('https://staging.example.com', 'b'));
+    await saveCredential(home.path, 'acme', 'default', credential('https://api.example.com', 'a'));
+    await saveCredential(home.path, 'acme', 'staging', credential('https://staging.example.com', 'b'));
 
-    assert.equal(await deleteCredential(home.path, 'kit', 'staging'), true);
-    assert.equal(await deleteCredential(home.path, 'kit', 'staging'), false);
+    assert.equal(await deleteCredential(home.path, 'acme', 'staging'), true);
+    assert.equal(await deleteCredential(home.path, 'acme', 'staging'), false);
 
-    const file = await loadCredentials(home.path, 'kit');
+    const file = await loadCredentials(home.path, 'acme');
     assert.deepEqual(Object.keys(file.profiles), ['default']);
   } finally {
     await home.cleanup();
@@ -110,7 +110,7 @@ test('deleting one profile leaves the rest', async () => {
 test('a missing credentials file is not an error', async () => {
   const home = await createTempHome();
   try {
-    assert.deepEqual(await loadCredentials(home.path, 'kit'), { version: 1, profiles: {} });
+    assert.deepEqual(await loadCredentials(home.path, 'acme'), { version: 1, profiles: {} });
   } finally {
     await home.cleanup();
   }
@@ -126,7 +126,7 @@ const file = (baseUrl: string): CredentialsFile => ({
 const options = (baseUrl: string, trusted: boolean) => ({
   profile: 'default',
   baseUrl,
-  baseUrlOrigin: trusted ? '--base-url' : 'kit.config.json',
+  baseUrlOrigin: trusted ? '--base-url' : 'acme.config.json',
   baseUrlTrusted: trusted,
   now: new Date('2026-01-01T00:00:00.000Z'),
 });
@@ -157,7 +157,7 @@ test('a token is never sent to a different endpoint named by a trusted source', 
 });
 
 test('an untrusted project config silently withholds the token rather than leaking it', () => {
-  // A `kit.config.json` committed to a repository can name any host. Running
+  // A `acme.config.json` committed to a repository can name any host. Running
   // the CLI inside that checkout must not post the token to it — and must not
   // hard-fail either, since that would let any checked-in file break the CLI.
   const resolved = resolveCredential(

@@ -7,7 +7,7 @@
  *    localhost, so the code under test is the real code — real sockets, real
  *    redirects, real form encoding — with no network.
  * 2. **The template's first five minutes.** `npm run mock-server` makes
- *    `kit login` work end to end in a fresh clone, before the adopter has
+ *    `acme login` work end to end in a fresh clone, before the adopter has
  *    written any backend at all.
  *
  * It is also the executable specification for `docs/auth-server.md`: whatever

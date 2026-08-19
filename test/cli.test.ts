@@ -11,9 +11,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { APP, baseUrlEnvName, tokenEnvName } from '../src/app.ts';
-import { EXIT } from '../src/kit/errors.ts';
-import { stripAnsi } from '../src/kit/theme.ts';
-import { saveCredential } from '../src/kit/credentials.ts';
+import { EXIT } from '../src/core/errors.ts';
+import { stripAnsi } from '../src/core/theme.ts';
+import { saveCredential } from '../src/core/credentials.ts';
 import { createTempHome, run } from './support/harness.ts';
 
 // Read the brand rather than hard-coding it, so these still pass after

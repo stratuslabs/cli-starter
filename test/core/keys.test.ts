@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { KeyDecoder } from '../../src/kit/keys.ts';
+import { KeyDecoder } from '../../src/core/keys.ts';
 
 const ESC = '\u001b';
 const names = (keys: { name: string }[]): string[] => keys.map((key) => key.name);

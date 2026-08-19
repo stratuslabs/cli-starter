@@ -23,7 +23,7 @@ one will happily absorb it: an abort reported as "could not reach the server"
 is a network failure the user did not have, and one swallowed by a
 save-anyway branch is a success they were actively trying to prevent.
 
-So every such layer asks `isInterruption(error, signal)` from `kit/errors.ts`
+So every such layer asks `isInterruption(error, signal)` from `core/errors.ts`
 before applying its own classification. The signal is a parameter because the
 evidence differs by layer — above the transport the error is already an
 `InterruptedError`, while at the transport boundary it is still a bare
@@ -50,9 +50,9 @@ the caller to grep English.
 ## In scripts
 
 ```bash
-if ! output=$(kit whoami --json); then
+if ! output=$(acme whoami --json); then
   case $? in
-    4) kit login ;;
+    4) acme login ;;
     5) echo "service unavailable, retrying later" ;;
     *) echo "$output" >&2; exit 1 ;;
   esac
@@ -69,7 +69,7 @@ Failures print to **stdout** as JSON, so the same pipe carries both outcomes:
   "error": {
     "code": "auth.not_signed_in",
     "message": "You are not signed in to Example.",
-    "hint": "Run `kit login`, or set $KIT_TOKEN."
+    "hint": "Run `acme login`, or set $ACME_TOKEN."
   }
 }
 ```
@@ -80,5 +80,5 @@ and may be reworded.
 
 ## Adding one
 
-Add it to `EXIT` in `src/kit/errors.ts`, give it a `CliError` subclass, and add
+Add it to `EXIT` in `src/core/errors.ts`, give it a `CliError` subclass, and add
 a row to the table above. Do not reuse a number for a different meaning.

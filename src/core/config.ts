@@ -48,7 +48,7 @@ export interface LoadedConfig {
 }
 
 export interface ConfigLookupOptions {
-  /** Lower-case brand, e.g. `kit` → `kit.config.json`, `~/.kit/config.json`. */
+  /** Lower-case brand slug: `<brand>.config.json` and `~/.<brand>/config.json`. */
   brand: string;
   cwd: string;
   homeDir: string;

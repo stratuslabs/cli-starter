@@ -12,8 +12,8 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 
 import { main } from '../../src/main.ts';
-import type { CliEnvironment, CliStreams } from '../../src/kit/env.ts';
-import { stripAnsi } from '../../src/kit/theme.ts';
+import type { CliEnvironment, CliStreams } from '../../src/core/env.ts';
+import { stripAnsi } from '../../src/core/theme.ts';
 
 export interface CapturedOutput {
   readonly stdout: string;
@@ -78,7 +78,7 @@ export interface HarnessResult {
 
 /** A disposable `$HOME`, so credential tests never see each other's files. */
 export const createTempHome = async (): Promise<{ path: string; cleanup: () => Promise<void> }> => {
-  const path = await mkdtemp(join(tmpdir(), 'cli-kit-test-'));
+  const path = await mkdtemp(join(tmpdir(), 'cli-starter-test-'));
   return { path, cleanup: () => rm(path, { recursive: true, force: true }) };
 };
 

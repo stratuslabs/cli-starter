@@ -1,5 +1,5 @@
 /**
- * `kit doctor` — what this CLI would actually do, and why.
+ * `acme doctor` — what this CLI would actually do, and why.
  *
  * The point is **provenance**, not a list of green ticks. Almost every support
  * question of the form "it works on my machine but not in CI" is really "a
@@ -12,12 +12,12 @@
 import { access, stat } from 'node:fs/promises';
 
 import { APP, baseUrlEnvName, resolveBaseUrl, tokenEnvName } from '../app.ts';
-import { defineCommand } from '../kit/command.ts';
-import { credentialsPath, loadCredentials } from '../kit/credentials.ts';
-import { detectColorLevel, detectUnicode, isCI, isInteractive } from '../kit/env.ts';
-import { EXIT } from '../kit/errors.ts';
-import { loadConfigFile, resolveConfigLocation } from '../kit/config.ts';
-import { definitionList } from '../kit/render.ts';
+import { defineCommand } from '../core/command.ts';
+import { credentialsPath, loadCredentials } from '../core/credentials.ts';
+import { detectColorLevel, detectUnicode, isCI, isInteractive } from '../core/env.ts';
+import { EXIT } from '../core/errors.ts';
+import { loadConfigFile, resolveConfigLocation } from '../core/config.ts';
+import { definitionList } from '../core/render.ts';
 import { fetchIdentity, openSession } from './session.ts';
 
 interface Finding {

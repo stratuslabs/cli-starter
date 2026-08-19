@@ -15,8 +15,8 @@ import {
   createInteractivePrompter,
   createNonInteractivePrompter,
   createPlainPrompter,
-} from '../../src/kit/prompt.ts';
-import { stripAnsi, plainTheme } from '../../src/kit/theme.ts';
+} from '../../src/core/prompt.ts';
+import { stripAnsi, plainTheme } from '../../src/core/theme.ts';
 import { FakeTty } from '../support/harness.ts';
 
 const ESC = '\u001b';

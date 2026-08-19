@@ -9,9 +9,9 @@ that authenticates, calls an API, and renders a table or JSON, with tests in
 
 ```bash
 npm run mock-server            # terminal 1
-npm run kit -- login           # terminal 2
-npm run kit -- notes
-npm run kit -- notes --status draft --json | jq -r '.notes[].id'
+npm run acme -- login           # terminal 2
+npm run acme -- notes
+npm run acme -- notes --status draft --json | jq -r '.notes[].id'
 ```
 
 The data is invented, and deliberately not borrowed from a public API — an
@@ -27,8 +27,8 @@ The rest of this page is the same thing, explained.
 `src/commands/posts.ts`:
 
 ```ts
-import { defineCommand } from '../kit/command.ts';
-import { table, plural } from '../kit/render.ts';
+import { defineCommand } from '../core/command.ts';
+import { table, plural } from '../core/render.ts';
 import { openSession } from './session.ts';
 
 export const postsCommand = defineCommand({
@@ -87,7 +87,7 @@ In `src/main.ts`, import it and add it to `commands`. That array is the whole
 registry — help, dispatch, and completions all read from it.
 
 That is why there is no separate help text to update: a command that is
-registered is documented, and `test/kit/help.test.ts` fails the build if a flag
+registered is documented, and `test/core/help.test.ts` fails the build if a flag
 or argument has no summary.
 
 ## The rules
@@ -110,7 +110,7 @@ produces nothing useful under `--json`.
 terminal in raw mode with a hidden cursor.
 
 ```ts
-import { NotFoundError } from '../kit/errors.ts';
+import { NotFoundError } from '../core/errors.ts';
 
 throw new NotFoundError('post.not_found', `No post with id ${id}.`, {
   hint: `Run \`${ctx.program.name} posts\` to see the ids you have.`,
@@ -189,7 +189,7 @@ frame.
 test('posts lists what the API returns', async () => {
   const result = await run({
     argv: ['posts', '--json'],
-    processEnv: { KIT_TOKEN: 'tok_test', KIT_BASE_URL: 'https://api.example.test' },
+    processEnv: { ACME_TOKEN: 'tok_test', ACME_BASE_URL: 'https://api.example.test' },
     fetch: async () => new Response(JSON.stringify({ posts: [{ id: 'p_1', title: 'Hi' }] })),
   });
 

@@ -13,9 +13,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { commandNames, type CommandDef } from '../../src/kit/command.ts';
-import { renderCommandHelp, renderRootHelp } from '../../src/kit/help.ts';
-import { plainTheme, stripAnsi } from '../../src/kit/theme.ts';
+import { commandNames, type CommandDef } from '../../src/core/command.ts';
+import { renderCommandHelp, renderRootHelp } from '../../src/core/help.ts';
+import { plainTheme, stripAnsi } from '../../src/core/theme.ts';
 import { program } from '../../src/main.ts';
 
 const theme = plainTheme(100);

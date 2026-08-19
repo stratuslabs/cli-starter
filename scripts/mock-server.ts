@@ -1,8 +1,8 @@
 /**
- * Run the mock auth server so `kit login` works in a fresh clone.
+ * Run the mock auth server so `acme login` works in a fresh clone.
  *
  *   npm run mock-server        # terminal 1
- *   npm run kit -- login       # terminal 2
+ *   npm run acme -- login       # terminal 2
  *
  * It is the same server the tests use, on the port `src/app.ts` points at by
  * default — so the browser flow works end to end before you have written any
@@ -32,9 +32,9 @@ process.stdout.write(
     '  It approves every sign-in immediately and issues fake tokens.',
     '  Not a real identity server — see docs/auth-server.md.',
     '',
-    '  Try:  npm run kit -- login',
-    '        npm run kit -- whoami',
-    '        npm run kit -- notes',
+    '  Try:  npm run acme -- login',
+    '        npm run acme -- whoami',
+    '        npm run acme -- notes',
     '',
     `  Or skip signing in — this token is already valid:`,
     `      export KIT_BASE_URL=${server.url}`,

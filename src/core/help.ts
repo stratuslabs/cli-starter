@@ -4,7 +4,7 @@
  * Nothing here is hand-maintained prose about *what commands exist* — that all
  * comes from `CommandDef`. The consequence is the point: you cannot add a
  * command or a flag and forget to document it, because there is no separate
- * document to forget. `test/kit/help.test.ts` walks the registry and asserts
+ * document to forget. `test/core/help.test.ts` walks the registry and asserts
  * every non-hidden name appears in rendered output.
  */
 

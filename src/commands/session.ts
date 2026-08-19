@@ -9,15 +9,15 @@
  */
 
 import { APP, baseUrlEnvName, resolveAuthProvider, resolveBaseUrl, tokenEnvName } from '../app.ts';
-import type { RunContext } from '../kit/context.ts';
+import type { RunContext } from '../core/context.ts';
 import {
   DEFAULT_PROFILE,
   loadCredentials,
   resolveCredential,
   type CredentialsFile,
-} from '../kit/credentials.ts';
-import { AuthError } from '../kit/errors.ts';
-import { HttpClient } from '../kit/http.ts';
+} from '../core/credentials.ts';
+import { AuthError } from '../core/errors.ts';
+import { HttpClient } from '../core/http.ts';
 
 export interface Session {
   http: HttpClient;

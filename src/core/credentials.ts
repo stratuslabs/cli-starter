@@ -197,7 +197,7 @@ export interface ResolvedCredential {
  * Decide which credential a request may use — the security-critical function
  * in this file.
  *
- * The endpoint binding is the point. Without it, a `kit.config.json` committed
+ * The endpoint binding is the point. Without it, a `<brand>.config.json` committed
  * to a repository can name an attacker's `baseUrl`, and simply running the CLI
  * inside that checkout posts your token to them. So:
  *

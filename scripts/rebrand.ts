@@ -8,7 +8,7 @@
  * whole design keeps branding in `src/app.ts` and the manifest, so this script
  * stays small enough to read before you run it.
  *
- * It uses the CLI's own prompt kit, which means running it is also the fastest
+ * It uses the CLI's own prompts, which means running it is also the fastest
  * way to see what the menus feel like.
  *
  * Everything it does is reversible with `git checkout .` — run it on a clean
@@ -18,9 +18,16 @@
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { createInteractivePrompter, createPlainPrompter, type Prompter } from '../src/kit/prompt.ts';
-import { createTheme } from '../src/kit/theme.ts';
-import { detectColorLevel, detectUnicode } from '../src/kit/env.ts';
+import { createInteractivePrompter, createPlainPrompter, type Prompter } from '../src/core/prompt.ts';
+import { createTheme } from '../src/core/theme.ts';
+import { detectColorLevel, detectUnicode } from '../src/core/env.ts';
+import {
+  PLACEHOLDER,
+  PLACEHOLDER_ENV,
+  PLACEHOLDER_HOME,
+  PLACEHOLDER_WORD,
+  REBRANDED_DOCS,
+} from './placeholder.ts';
 
 const root = dirname(import.meta.dirname);
 
@@ -68,7 +75,7 @@ try {
 
   const name = await prompter.text({
     message: 'Binary name (what people type):',
-    initial: 'kit',
+    initial: PLACEHOLDER,
     validate: (value) =>
       /^[a-z][a-z0-9-]*$/.test(value.trim())
         ? undefined
@@ -144,21 +151,21 @@ try {
     const scripts = manifest['scripts'] as Record<string, string>;
     // The convenience script is named after the binary, so the README's
     // `npm run <name> -- login` keeps working.
-    delete scripts['kit'];
+    delete scripts[PLACEHOLDER];
     scripts[binary] = 'node --experimental-strip-types src/bin.ts';
     manifest['scripts'] = scripts;
     return `${JSON.stringify(manifest, null, 2)}\n`;
   });
 
-  // Documentation is written against `kit`; rewrite the invocations so the
-  // README does not tell a new user to run a binary that no longer exists.
-  if (binary !== 'kit') {
-    for (const file of ['README.md', 'docs/adding-a-command.md', 'docs/auth-server.md']) {
+  // Documentation is written against the placeholder; rewrite the invocations
+  // so the README does not tell a new user to run a binary that does not exist.
+  if (binary !== PLACEHOLDER) {
+    for (const file of REBRANDED_DOCS) {
       await edit(file, (text) =>
         text
-          .replace(/\bkit\b(?= )/g, binary)
-          .replace(/~\/\.kit\//g, `~/.${brand}/`)
-          .replace(/\bKIT_/g, `${envPrefix}_`),
+          .replace(PLACEHOLDER_WORD, binary)
+          .replace(PLACEHOLDER_HOME, `~/.${brand}/`)
+          .replace(PLACEHOLDER_ENV, `${envPrefix}_`),
       );
     }
   }
