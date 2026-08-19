@@ -111,7 +111,7 @@ test('the authorization code is single-use', async () => {
   }
 });
 
-test('a mismatched state is rejected and nothing is saved', async () => {
+test('unverified callbacks do not terminate a pending browser sign-in', async () => {
   const home = await createTempHome();
   try {
     const result = await run({
@@ -120,18 +120,32 @@ test('a mismatched state is rejected and nothing is saved', async () => {
       homeDir: home.path,
       fetch: globalThis.fetch,
       openExternal: async (url) => {
-        // Simulate a callback that did not originate from this request.
-        const parsed = new URL(url);
-        const redirect = new URL(parsed.searchParams.get('redirect_uri') ?? '');
-        redirect.searchParams.set('code', 'anything');
-        redirect.searchParams.set('state', 'not-the-state-we-sent');
-        await globalThis.fetch(redirect);
+        const authorization = await globalThis.fetch(url, { redirect: 'manual' });
+        const validCallback = new URL(authorization.headers.get('location') ?? '');
+
+        const unverifiedError = new URL(validCallback);
+        unverifiedError.searchParams.delete('code');
+        unverifiedError.searchParams.delete('state');
+        unverifiedError.searchParams.set('error', 'access_denied');
+        const errorResponse = await globalThis.fetch(unverifiedError);
+        assert.equal(errorResponse.status, 400);
+
+        const incorrectState = new URL(validCallback);
+        incorrectState.searchParams.set('state', 'not-the-state-we-sent');
+        const stateResponse = await globalThis.fetch(incorrectState);
+        assert.equal(stateResponse.status, 400);
+
+        // The listener and login promise must survive both callbacks so the
+        // genuine authorization response can still complete the flow.
+        const validResponse = await globalThis.fetch(validCallback);
+        assert.equal(validResponse.status, 200);
       },
     });
 
-    assert.equal(result.exitCode, 4);
-    assert.match(result.output.plain, /did not match/);
-    await assert.rejects(readStore(home.path));
+    assert.equal(result.exitCode, 0, result.output.plain);
+    assert.match(result.output.plain, /Signed in as Ada Lovelace/);
+    const store = await readStore(home.path);
+    assert.ok(store.profiles['default']?.token.startsWith('tok_'));
   } finally {
     await home.cleanup();
   }

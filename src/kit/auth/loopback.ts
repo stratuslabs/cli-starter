@@ -173,6 +173,17 @@ export const loopbackLogin = async (options: LoopbackLoginOptions): Promise<Auth
         return;
       }
 
+      const returnedState = url.searchParams.get('state') ?? '';
+
+      // Check state before anything else. A mismatch means this callback did
+      // not come from the request we started, so it is not ours to act on. In
+      // particular, an unverified OAuth error must not be able to deny the
+      // genuine request or shut down its listener.
+      if (!safeEqual(returnedState, state)) {
+        send(response, 400, page('Sign-in could not be verified', 'Please start again.', 'error'));
+        return;
+      }
+
       const error = url.searchParams.get('error');
       if (error !== null) {
         const description = url.searchParams.get('error_description') ?? error;
@@ -187,28 +198,9 @@ export const loopbackLogin = async (options: LoopbackLoginOptions): Promise<Auth
         return;
       }
 
-      const returnedState = url.searchParams.get('state') ?? '';
       const returnedCode = url.searchParams.get('code') ?? '';
-
-      // Check state before anything else. A mismatch means this callback did
-      // not come from the request we started, so it is not ours to act on.
-      if (!safeEqual(returnedState, state)) {
-        send(response, 400, page('Sign-in could not be verified', 'Please start again.', 'error'));
-        finish(() =>
-          reject(
-            new AuthError(
-              'auth.state_mismatch',
-              'The sign-in response did not match the request. Nothing was saved.',
-              { hint: 'Run the command again.' },
-            ),
-          ),
-        );
-        return;
-      }
-
       if (returnedCode === '') {
         send(response, 400, page('Sign-in could not be completed', 'No code was returned.', 'error'));
-        finish(() => reject(new AuthError('auth.no_code', 'The server returned no authorization code.')));
         return;
       }
 
