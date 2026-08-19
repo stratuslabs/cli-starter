@@ -19,6 +19,15 @@ Set Padding 18
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 45ms
 
+# --- the welcome screen, on the bare binary name --------------------------
+Type "npm run acme"
+Enter
+Sleep 2.5s
+
+Type "clear"
+Enter
+Sleep 300ms
+
 # --- help, derived from the registry --------------------------------------
 Type "npm run acme -- --help"
 Enter

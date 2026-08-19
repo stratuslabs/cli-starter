@@ -18,6 +18,7 @@
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
+import { renderWord } from './banner-font.ts';
 import { createInteractivePrompter, createPlainPrompter, type Prompter } from '../src/core/prompt.ts';
 import { createTheme } from '../src/core/theme.ts';
 import { detectColorLevel, detectUnicode } from '../src/core/env.ts';
@@ -61,6 +62,20 @@ const edit = async (relative: string, change: (text: string) => string): Promise
 
 /** Escape for use inside a single-quoted TypeScript string literal. */
 const literal = (value: string): string => value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+/**
+ * The `art:` block for `src/app.ts`, drawn from the new binary name.
+ *
+ * Returns an empty string — removing the field — when the name contains a
+ * character the block font has no glyph for. The banner is then simply off,
+ * which `shouldShowBanner` already handles, rather than shipping a logo with a
+ * hole in it. Either way the comment above it tells the reader what to do.
+ */
+const artBlock = (binary: string): string => {
+  const rows = renderWord(binary);
+  if (rows === undefined) return '';
+  return `\n  art: [\n${rows.map((row) => `    '${literal(row)}',`).join('\n')}\n  ],`;
+};
 
 const slug = (value: string): string =>
   value
@@ -140,7 +155,10 @@ try {
       .replace(/(\n    displayName: )'[^']*',/, `$1'${literal(displayName)}',`)
       .replace(/(\n    clientId: )'[^']*',/, `$1'${literal(clientId)}',`)
       // The footer credits the template; an adopted CLI should not carry it.
-      .replace(/\n  footer: '[^']*',/, ''),
+      .replace(/\n  footer: '[^']*',/, '')
+      // A function replacement, so a `$` in the art is never read as a
+      // capture-group reference.
+      .replace(/\n  art: \[[\s\S]*?\n  \],/, () => artBlock(binary)),
   );
 
   await edit('package.json', (text) => {

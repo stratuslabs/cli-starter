@@ -56,8 +56,8 @@ npm run rebrand
 ```
 
 It asks for a binary name, a summary, and your API endpoint, then rewrites the
-few files that carry the template's identity — and deletes the example commands
-if you want. Run it on a clean tree and read the diff: it is a short script, and
+few files that carry the template's identity — redrawing the welcome banner from
+your name, and deleting the example commands if you want. Run it on a clean tree and read the diff: it is a short script, and
 everything it does is reversible.
 
 Requires Node `>=22.13 <23 || >=23.4`. The gap is deliberate, not a typo —
@@ -91,6 +91,12 @@ later. Flag values declared with `choices` complete too.
 acme completions zsh > "${fpath[1]}/_acme"           # install
 eval "$(acme completions zsh)"                       # or regenerate per shell
 ```
+
+**A welcome screen, gated properly.** Typing the bare binary name shows a
+neofetch-style banner above the help. It appears there and nowhere else: never
+on a command that does work, never under `--json` or `--quiet`, never in a pipe,
+never in CI. `rebrand` redraws the art from your name, and deleting `art` from
+`src/app.ts` turns it off.
 
 **Errors that say what to do.** Every failure carries a `hint`, and each kind
 gets its own exit code (`2` usage, `3` config, `4` auth, `5` network, …), so a
@@ -161,6 +167,7 @@ test/
   support/        ← the harness and a runnable mock auth server
 scripts/
   rebrand.ts      ← the one-time setup
+  banner-font.ts  ← draws the welcome banner during rebrand
   mock-server.ts  ← keeps `login` working before your backend exists
 docs/
 ```

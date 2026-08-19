@@ -42,6 +42,9 @@ export const nodeStreams = (): CliStreams => ({
   stderr: { write: (chunk) => process.stderr.write(chunk) },
 });
 
+const nonZero = (value: number | undefined): number | undefined =>
+  value === undefined || value <= 0 ? undefined : value;
+
 export const nodeEnvironment = (signal?: AbortSignal): CliEnvironment => ({
   processEnv: { ...process.env },
   cwd: process.cwd(),
@@ -50,9 +53,11 @@ export const nodeEnvironment = (signal?: AbortSignal): CliEnvironment => ({
   tty: {
     stdoutIsTty: process.stdout.isTTY === true,
     stdinIsTty: process.stdin.isTTY === true,
-    // `columns` is undefined when stdout is not a terminal; 80 is the
-    // conventional assumption and keeps redirected output stable.
-    columns: process.stdout.columns ?? 80,
+    // `columns` is undefined when stdout is not a terminal, and some pty
+    // wrappers report 0 before the first resize — neither is a width anything
+    // can lay out against, so both fall back to the conventional 80, which
+    // also keeps redirected output stable.
+    columns: nonZero(process.stdout.columns) ?? 80,
   },
   stdin: process.stdin,
   fetch: globalThis.fetch,

@@ -59,6 +59,7 @@ export const program: ProgramDef = {
     demoCommand,
   ],
   ...(APP.footer === undefined ? {} : { footer: APP.footer }),
+  ...(APP.art === undefined ? {} : { art: APP.art }),
 };
 
 export const main = (options: {
