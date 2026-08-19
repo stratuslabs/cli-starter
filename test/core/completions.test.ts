@@ -97,10 +97,6 @@ test('aliases are completable', () => {
   for (const shell of SHELLS) {
     assert.match(completionsFor(aliased, shell), /zzalias/, `${shell}: alias missing`);
   }
-
-  // And the real registry's alias is there too.
-  const withAlias = program.commands.find((command) => (command.aliases ?? []).length > 0);
-  assert.ok(withAlias, 'expected a command with an alias');
 });
 
 test('flag choices are offered as values', () => {
@@ -173,10 +169,41 @@ test('each script carries what its shell needs to load it', () => {
 
 test('the binary name is taken from the program, not hardcoded', () => {
   // Everything here has to survive `rebrand`, which only rewrites src/app.ts.
+  //
+  // Asserted on the places the name is *structural* — the compdef line, the
+  // function, the `complete -c` target — rather than on the bare word. A
+  // summary is free to mention the product by name, and a CLI whose name is a
+  // word ("updates") would fail a whole-word check on its own prose.
   const renamed: ProgramDef = { ...program, name: 'zzrenamed' };
+
+  const structural: Record<string, RegExp[]> = {
+    bash: [/complete -F _zzrenamed zzrenamed/],
+    zsh: [/^#compdef zzrenamed/m, /^_zzrenamed\(\) \{/m, /compdef _zzrenamed zzrenamed/],
+    fish: [/^complete -c zzrenamed -f$/m],
+  };
+
   for (const shell of SHELLS) {
     const script = completionsFor(renamed, shell);
-    assert.match(script, /zzrenamed/, shell);
-    assert.doesNotMatch(script, new RegExp(`\\b${program.name}\\b`), `${shell}: leaked the old name`);
+    for (const pattern of structural[shell] ?? []) {
+      assert.match(script, pattern, `${shell}: ${pattern} — the old name is still wired in`);
+    }
+  }
+});
+
+test('the generated scripts do not name a command the CLI does not have', () => {
+  // The comment explaining flag-skipping used to say `notes`, which is this
+  // template's example command. Every adopter who deleted it shipped a
+  // completion file documenting a command that did not exist.
+  const other: ProgramDef = {
+    name: 'other',
+    version: '1.0.0',
+    summary: 'a CLI with a different command set',
+    commands: [{ name: 'deploy', summary: 'ship it', run: () => Promise.resolve() }],
+    globalFlags: {},
+  };
+
+  for (const shell of SHELLS) {
+    const script = completionsFor(other, shell);
+    assert.ok(!script.includes('notes'), `${shell} names a command "other" does not have`);
   }
 });

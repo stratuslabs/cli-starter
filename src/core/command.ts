@@ -92,6 +92,11 @@ export interface ProgramDef {
   globalFlags: Record<string, FlagDef>;
   /** Rendered at the foot of the root help. */
   footer?: string;
+  /**
+   * ASCII art for the banner. Absent means no banner, everywhere.
+   * See `banner.ts` for when one is shown — it is narrower than you think.
+   */
+  art?: readonly string[];
 }
 
 /** Identity helper; exists for inference and for a greppable declaration site. */

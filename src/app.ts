@@ -31,6 +31,20 @@ export interface AppConfig {
   envPrefix: string;
   auth: AuthProvider;
   footer?: string;
+  /**
+   * ASCII art for the banner, one string per line.
+   *
+   * Deliberately plain ASCII rather than block-drawing characters: this is
+   * painted with a single theme colour and has to survive a terminal that
+   * cannot render Unicode, where a half-drawn logo looks broken rather than
+   * charming.
+   *
+   * Keep it short. It is shown above the command list on a bare invocation,
+   * and a logo taller than the help it introduces is a logo nobody wanted.
+   * Delete this field and the banner disappears everywhere — there is no
+   * empty frame left behind.
+   */
+  art?: string[];
 }
 
 /**
@@ -48,6 +62,15 @@ export const APP: AppConfig = {
   version: CLI_VERSION,
   summary: 'A polished CLI, ready to be made yours.',
   envPrefix: 'ACME',
+  // The banner shown when someone types the bare binary name. `rebrand`
+  // redraws this from your name in a block font; it is meant to be replaced by
+  // hand afterwards, and deleting it entirely turns the banner off.
+  art: [
+    '  __ _  ___ _ __ ___   ___ ',
+    " / _` |/ __| '_ ` _ \\ / _ \\",
+    '| (_| | (__| | | | | |  __/',
+    ' \\__,_|\\___|_| |_| |_|\\___|',
+  ],
   auth: {
     displayName: 'Example',
     baseUrl: DEFAULT_BASE_URL,

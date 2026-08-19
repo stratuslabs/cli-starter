@@ -2,6 +2,11 @@
 
 A template for building command-line tools that feel finished.
 
+[![CI](https://github.com/stratuslabs/cli-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/stratuslabs/cli-starter/actions/workflows/ci.yml)
+[![Node](https://img.shields.io/badge/node-%3E%3D22.13-3c873a)](https://nodejs.org)
+[![Zero dependencies](https://img.shields.io/badge/dependencies-0-blue)](package.json)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 > **Early days.** This is in use — [`@updatespage/cli`](https://github.com/stratuslabs/updates-page-cli)
 > is built on it — but it is new, the API under `src/core/` may still move, and
 > it has not been through many hands yet. Expect rough edges, and please report
@@ -11,14 +16,26 @@ Click **Use this template**, run one script, and you have a CLI with browser
 sign-in, arrow-key menus, machine-readable output, and help that cannot drift
 out of date — before you have written a single line of your own.
 
-```
-$ acme login
-Opening your browser to sign in to Example…
-✓ Signed in as Ada Lovelace (Analytical Engines).
-  Token saved to ~/.acme/credentials.json (0600).
+<!-- Render with `vhs docs/demo.tape`, then uncomment. See docs/demo.tape. -->
+<!-- ![A terminal recording: the arrow-key menu, a table, --json, and an error with a hint](docs/demo.gif) -->
 
-$ acme demo output --json | jq '.posts[0].id'
-"p_8f21"
+## Try it in thirty seconds
+
+No account, no backend, nothing to configure:
+
+```bash
+git clone https://github.com/stratuslabs/cli-starter && cd cli-starter
+npm install
+npm run acme -- demo prompts     # arrow keys, filtering, secret input
+npm run acme -- demo output      # tables, glyphs, --json
+npm run acme -- --help           # help, derived from the registry
+```
+
+Then the part that needs a server — a stand-in is included:
+
+```bash
+npm run mock-server              # terminal 1
+npm run acme -- login            # terminal 2 — the real browser flow, end to end
 ```
 
 ## Why this exists
@@ -30,26 +47,21 @@ always the pass that gets cut.
 
 This is that second pass, done once, tested, and ready to copy.
 
-## Start
+## Make it yours
 
-Requires Node `>=22.13 <23 || >=23.4`.
-
-```bash
-npm install
-npm run mock-server     # terminal 1 — a stand-in auth server
-npm run acme -- login    # terminal 2 — the real flow, end to end
-npm run acme -- demo prompts
-```
-
-Then make it yours:
+Click **Use this template**, then:
 
 ```bash
 npm run rebrand
 ```
 
 It asks for a binary name, a summary, and your API endpoint, then rewrites the
-few files that carry the template's identity. Run it on a clean tree and read
-the diff — it is a short script, and everything it does is reversible.
+few files that carry the template's identity — redrawing the welcome banner from
+your name, and deleting the example commands if you want. Run it on a clean tree and read the diff: it is a short script, and
+everything it does is reversible.
+
+Requires Node `>=22.13 <23 || >=23.4`. The gap is deliberate, not a typo —
+23.0–23.3 are newer than the 22.13 floor and still lack what it provides.
 
 ## What you get
 
@@ -80,6 +92,12 @@ acme completions zsh > "${fpath[1]}/_acme"           # install
 eval "$(acme completions zsh)"                       # or regenerate per shell
 ```
 
+**A welcome screen, gated properly.** Typing the bare binary name shows a
+neofetch-style banner above the help. It appears there and nowhere else: never
+on a command that does work, never under `--json` or `--quiet`, never in a pipe,
+never in CI. `rebrand` redraws the art from your name, and deleting `art` from
+`src/app.ts` turns it off.
+
 **Errors that say what to do.** Every failure carries a `hint`, and each kind
 gets its own exit code (`2` usage, `3` config, `4` auth, `5` network, …), so a
 script can tell "sign in again" from "check your wifi".
@@ -97,6 +115,45 @@ lists, so scripts and tests take the same path a human does. When there is
 nobody to ask, a prompt fails immediately and names the flag that would have
 answered it, instead of hanging a CI job.
 
+## How it compares
+
+**`commander`, `yargs`, `cac`, `citty`** are argument parsers, and good ones.
+They stop where this starts: no sign-in, no credential store, no colour
+detection, no prompt kit, no exit-code taxonomy. You would assemble those
+yourself, which is exactly the second pass that never happens.
+
+**`oclif`** is the closest thing, and the honest comparison. It is a real
+framework with plugins, generators, and auto-generated docs, maintained by
+people whose job that is. If you want a plugin ecosystem, or you want somebody
+else to own the maintenance, use oclif — it is the better answer to that
+question.
+
+This is the other trade. It is a **copy you own outright**, not a dependency
+you upgrade: no framework conventions to learn, no plugin surface most CLIs
+never use, nothing that can change underneath you, and every line is yours to
+read and delete. The cost is that fixes made here do not reach you
+automatically — [docs/upstream.md](docs/upstream.md) is about making that a
+small job rather than an archaeology project.
+
+Zero runtime dependencies, and that is not a boast about bundle size. It means
+nothing in your supply chain that you did not put there, on a tool that holds
+credentials.
+
+## What it does not do
+
+Setting this out so you can rule it out quickly:
+
+- **No self-update.** Adopters distribute via npm, Homebrew, or binaries; a
+  self-updater would be wrong for most of them.
+- **No release workflow yet.** CI builds and tests. Getting it published is
+  still yours to wire up — the biggest known gap.
+- **No plugin system.** Commands are files you import. That is the whole model.
+- **No completion of server-side values.** Commands, flags and `choices`
+  complete; post ids and project names do not — that needs a cache and a story
+  for being offline.
+- **Node only.** If you want a single static binary, this is the wrong starting
+  point; look at Go or Rust.
+
 ## Layout
 
 ```
@@ -110,6 +167,7 @@ test/
   support/        ← the harness and a runnable mock auth server
 scripts/
   rebrand.ts      ← the one-time setup
+  banner-font.ts  ← draws the welcome banner during rebrand
   mock-server.ts  ← keeps `login` working before your backend exists
 docs/
 ```
@@ -170,6 +228,7 @@ read in one sitting.
 npm run build      # tsc
 npm run typecheck  # includes the tests
 npm test           # node --test, in-process, no network
+vhs docs/demo.tape # re-record the README's terminal demo (needs charmbracelet/vhs)
 ```
 
 Tests drive the real `main()` with fake streams and a temp home directory —

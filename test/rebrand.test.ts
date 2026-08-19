@@ -23,6 +23,7 @@ import {
   PLACEHOLDER_WORD,
   REBRANDED_DOCS,
 } from '../scripts/placeholder.ts';
+import { FONT_HEIGHT, renderWord } from '../scripts/banner-font.ts';
 
 const root = join(import.meta.dirname, '..');
 
@@ -75,4 +76,36 @@ test('the placeholder does not collide with a real command', async () => {
   // mangle every mention of the demo command.
   const main = await readFile(join(root, 'src/main.ts'), 'utf8');
   assert.doesNotMatch(main, new RegExp(`name: '${PLACEHOLDER}'`));
+});
+
+/* -- the banner art rebrand redraws --------------------------------------- */
+
+test('the block font renders a name, and refuses one it cannot', () => {
+  const rows = renderWord('acme');
+  assert.ok(rows !== undefined);
+  assert.equal(rows.length, FONT_HEIGHT);
+
+  // Every row the same visible width would mean trailing blanks were kept,
+  // which pads the banner's left column for no visible reason.
+  const widths = new Set(rows.map((row) => row.length));
+  assert.ok(widths.size > 1, 'trailing blanks should be trimmed');
+  assert.ok(rows.some((row) => row.includes('#')), 'expected something drawn');
+
+  // A name with a character the font has no glyph for gets no art at all —
+  // better than a logo with a hole in it.
+  assert.equal(renderWord('acme!'), undefined);
+});
+
+test('the art block rebrand writes into app.ts parses back to the same rows', async () => {
+  // rebrand rewrites src/app.ts with a regex, so the shape it emits has to be
+  // the shape the file already has, or the next run finds nothing to replace.
+  const app = await readFile(join(root, 'src/app.ts'), 'utf8');
+  const block = /\n  art: \[[\s\S]*?\n  \],/.exec(app);
+  assert.ok(block !== null, 'src/app.ts has an art block for rebrand to replace');
+
+  const rows = renderWord('demo');
+  assert.ok(rows !== undefined);
+  const written = `\n  art: [\n${rows.map((row) => `    '${row}',`).join('\n')}\n  ],`;
+  assert.match(written, /\n  art: \[[\s\S]*?\n  \],/);
+  assert.equal(app.replace(/\n  art: \[[\s\S]*?\n  \],/, () => written).includes(rows[0] ?? ''), true);
 });

@@ -11,6 +11,7 @@ import { effectiveFlags, type FlagDef, type ProgramDef } from './command.ts';
 import { createFlagBag, type GlobalOptions, type RunContext } from './context.ts';
 import { detectColorLevel, detectUnicode, isInteractive, type CliEnvironment, type CliStreams } from './env.ts';
 import { CliError, EXIT, errorToJson, toCliError, UsageError } from './errors.ts';
+import { programFacts, renderBanner, shouldShowBanner } from './banner.ts';
 import { renderCommandHelp, renderRootHelp, renderUsageHint } from './help.ts';
 import { parseInvocation, resolveForHelp } from './parse.ts';
 import {
@@ -170,9 +171,18 @@ export const runCli = async (program: ProgramDef, options: RunCliOptions): Promi
     }
 
     if (invocation.helpRequested || invocation.resolved === undefined) {
+      // The bare binary name is somebody asking "what is this". An explicit
+      // --help is somebody asking for reference, quite possibly into a pager
+      // or a pipe, so it stays clean.
+      const bare = invocation.resolved === undefined && !invocation.helpRequested;
+      const banner =
+        bare && shouldShowBanner(env, { json: pre.json, quiet: pre.quiet }, program.art)
+          ? `${renderBanner(program.art ?? [], programFacts(program, env), theme).join('\n')}\n\n`
+          : '';
+
       const text =
         invocation.resolved === undefined
-          ? renderRootHelp(program, theme)
+          ? banner + renderRootHelp(program, theme)
           : renderCommandHelp(program, invocation.resolved, theme);
       // Help is what the user asked for, so it is data on stdout. Help printed
       // *because* something failed goes to stderr — see renderError.
