@@ -96,7 +96,51 @@ test('a transport failure becomes a network error, not a raw TypeError', async (
   );
 });
 
-test('anonymous requests omit the Authorization header', async () => {
+test('relative and same-origin absolute URLs receive the bearer token', async () => {
+  const seen: Array<{ url: string; auth: string | null }> = [];
+  const authed = new HttpClient({
+    baseUrl: 'https://api.example.test',
+    fetch: async (input, init) => {
+      seen.push({
+        url: String(input),
+        auth: new Headers(init?.headers).get('authorization'),
+      });
+      return json({ ok: true });
+    },
+    userAgent: 'test/1.0',
+    token: 'tok_1',
+  });
+
+  await authed.get('/relative');
+  await authed.get('https://api.example.test/absolute');
+
+  assert.deepEqual(seen, [
+    { url: 'https://api.example.test/relative', auth: 'Bearer tok_1' },
+    { url: 'https://api.example.test/absolute', auth: 'Bearer tok_1' },
+  ]);
+});
+
+test('a cross-origin absolute URL cannot receive the bearer token', async () => {
+  let fetched = false;
+  const authed = new HttpClient({
+    baseUrl: 'https://api.example.test',
+    fetch: async () => {
+      fetched = true;
+      return json({ ok: true });
+    },
+    userAgent: 'test/1.0',
+    token: 'tok_1',
+  });
+
+  await assert.rejects(authed.get('https://downloads.example.test/file'), (error: unknown) => {
+    assert.ok(error instanceof AuthError, `got ${String(error)}`);
+    assert.equal(error.code, 'auth.cross_origin');
+    return true;
+  });
+  assert.equal(fetched, false);
+});
+
+test('an explicitly anonymous cross-origin request is allowed without Authorization', async () => {
   let auth: string | null = 'unset';
   const authed = new HttpClient({
     baseUrl: 'https://api.example.test',
@@ -108,9 +152,7 @@ test('anonymous requests omit the Authorization header', async () => {
     token: 'tok_1',
   });
 
-  await authed.get('/a');
-  assert.equal(auth, 'Bearer tok_1');
-  await authed.get('/b', { anonymous: true });
+  await authed.get('https://downloads.example.test/file', { anonymous: true });
   assert.equal(auth, null);
 });
 

@@ -173,6 +173,21 @@ export class HttpClient {
       ...options.headers,
     };
 
+    if (
+      options.anonymous !== true &&
+      this.options.token !== undefined &&
+      url.origin !== new URL(this.options.baseUrl).origin
+    ) {
+      throw new AuthError(
+        'auth.cross_origin',
+        `Refusing to send credentials to a different origin: ${url.origin}.`,
+        {
+          hint: 'Use an anonymous request for public resources on another origin.',
+          details: { baseOrigin: new URL(this.options.baseUrl).origin, requestOrigin: url.origin },
+        },
+      );
+    }
+
     if (options.anonymous !== true && this.options.token !== undefined) {
       headers['authorization'] = `Bearer ${this.options.token}`;
     }
