@@ -69,6 +69,17 @@ string to forget to update.
 nothing else — prompts, spinners, and warnings all go to stderr.
 `acme list --json | jq` works, always.
 
+**Tab completion that cannot go stale.** `acme completions zsh` (or `bash`,
+`fish`) generates a script from the same registry help reads, so a command you
+add is completable without touching a second file. Most CLIs ship a hand-written
+completion script that is accurate the day it lands and wrong two releases
+later. Flag values declared with `choices` complete too.
+
+```bash
+acme completions zsh > "${fpath[1]}/_acme"           # install
+eval "$(acme completions zsh)"                       # or regenerate per shell
+```
+
 **Errors that say what to do.** Every failure carries a `hint`, and each kind
 gets its own exit code (`2` usage, `3` config, `4` auth, `5` network, …), so a
 script can tell "sign in again" from "check your wifi".
@@ -190,10 +201,9 @@ the design rather than just the code, so the useful things to send are:
   device code, and a pasted token. If your provider needs something else,
   open an issue describing the flow before writing code, so the seam it needs
   gets designed rather than bolted on.
-- **Requests for what to build next.** [docs/upstream.md](docs/upstream.md)
-  lists what is deliberately deferred — shell completions, self-update, the
-  service installer. If one of those is what is stopping you adopting this,
-  that is worth knowing and moves it up.
+- **Requests for what to build next.** Self-update, a release workflow, and
+  request tracing are the obvious gaps. If one of those is what is stopping you
+  adopting this, that is worth knowing and moves it up.
 
 If you are sending code, two conventions that are load-bearing rather than
 stylistic:
