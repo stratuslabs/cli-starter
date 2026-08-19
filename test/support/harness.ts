@@ -12,8 +12,8 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 
 import { main } from '../../src/main.ts';
-import type { CliEnvironment, CliStreams } from '../../src/kit/env.ts';
-import { stripAnsi } from '../../src/kit/theme.ts';
+import type { CliEnvironment, CliStreams } from '../../src/core/env.ts';
+import { stripAnsi } from '../../src/core/theme.ts';
 
 export interface CapturedOutput {
   readonly stdout: string;

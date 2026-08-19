@@ -1,5 +1,5 @@
 /**
- * `kit demo` — a live tour of the UI primitives.
+ * `acme demo` — a live tour of the UI primitives.
  *
  * This exists to be *deleted*. It is here so that five seconds after cloning
  * the template you can see the menus, the table, the spinner, and the error
@@ -11,9 +11,9 @@
  * prints anything also supports `--json`.
  */
 
-import { defineCommand } from '../kit/command.ts';
-import { createSpinnerFactory } from '../kit/spinner.ts';
-import { box, plural, table } from '../kit/render.ts';
+import { defineCommand } from '../core/command.ts';
+import { createSpinnerFactory } from '../core/spinner.ts';
+import { box, plural, table } from '../core/render.ts';
 
 interface DemoRow {
   id: string;
@@ -70,7 +70,7 @@ const promptsCommand = defineCommand({
   summary: 'try the interactive menus',
   description:
     'Walks through a select, a confirm, and a text prompt. Run it with piped ' +
-    'stdin (`printf "2\\ny\\nAda\\n" | kit demo prompts`) to see the same flow ' +
+    'stdin (`printf "2\\ny\\nAda\\n" | acme demo prompts`) to see the same flow ' +
     'render as numbered lists for scripts.',
 
   async run(ctx) {
@@ -161,7 +161,7 @@ const errorCommand = defineCommand({
   },
 
   async run(ctx) {
-    const { AuthError, NetworkError, UsageError } = await import('../kit/errors.ts');
+    const { AuthError, NetworkError, UsageError } = await import('../core/errors.ts');
     const kind = ctx.flags.string('kind');
 
     if (kind === 'network') {
@@ -171,11 +171,11 @@ const errorCommand = defineCommand({
     }
     if (kind === 'usage') {
       throw new UsageError('Missing required flag --title.', {
-        hint: 'See `kit demo error --help`.',
+        hint: `See \`${ctx.program.name} demo error --help\`.`,
       });
     }
     throw new AuthError('demo.auth', 'Your saved sign-in has expired.', {
-      hint: 'Run `kit login` to sign in again.',
+      hint: `Run \`${ctx.program.name} login\` to sign in again.`,
     });
   },
 });
@@ -193,7 +193,12 @@ export const demoCommand = defineCommand({
 
   run(ctx) {
     for (const line of box(
-      ['Try:', '  kit demo prompts', '  kit demo output --json', '  kit demo progress'],
+      [
+        'Try:',
+        `  ${ctx.program.name} demo prompts`,
+        `  ${ctx.program.name} demo output --json`,
+        `  ${ctx.program.name} demo progress`,
+      ],
       ctx.theme,
       { title: 'demo' },
     )) {

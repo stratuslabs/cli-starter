@@ -3,7 +3,7 @@
 A template for building command-line tools that feel finished.
 
 > **Early days.** This is in use — [`@updatespage/cli`](https://github.com/stratuslabs/updates-page-cli)
-> is built on it — but it is new, the API under `src/kit/` may still move, and
+> is built on it — but it is new, the API under `src/core/` may still move, and
 > it has not been through many hands yet. Expect rough edges, and please report
 > them; see [Contributing](#contributing).
 
@@ -94,7 +94,7 @@ src/
   main.ts         ← the command registry. Add your commands here.
   bin.ts          ← the executable. Almost nothing in it.
   commands/       ← yours. notes.ts is the worked example; replace these.
-  kit/            ← the framework. You should not need to edit this.
+  core/           ← the framework. You should not need to edit this.
 test/
   support/        ← the harness and a runnable mock auth server
 scripts/
@@ -103,7 +103,7 @@ scripts/
 docs/
 ```
 
-The `src/kit/` and `src/commands/` split is the important one. `kit/` is
+The `src/core/` and `src/commands/` split is the important one. `core/` is
 upstream's; `commands/` is yours. Keeping the line clean is what lets you pull
 later improvements in — see [docs/upstream.md](docs/upstream.md).
 
@@ -186,7 +186,7 @@ the design rather than just the code, so the useful things to send are:
   detected, not assumed, and detection is where this kind of code goes wrong.
   If your terminal, shell, CI runner or SSH setup renders something badly, say
   which one — that is a bug with a fix, not a quirk.
-- **A flow the auth kit does not cover.** It does authorization-code + PKCE,
+- **A flow the auth module does not cover.** It does authorization-code + PKCE,
   device code, and a pasted token. If your provider needs something else,
   open an issue describing the flow before writing code, so the seam it needs
   gets designed rather than bolted on.
@@ -201,9 +201,9 @@ stylistic:
 - **New behaviour needs a test that fails without it**, and verifying it
   actually fails is part of writing it. A test that passes both ways is worse
   than none, because it reads as covered.
-- **`src/kit/` is the part adopters do not edit**, so changes there are pulled
+- **`src/core/` is the part adopters do not edit**, so changes there are pulled
   downstream into every CLI built from this. Keep the boundary: framework in
-  `src/kit/`, your own commands in `src/commands/`.
+  `src/core/`, your own commands in `src/commands/`.
 
 `npm run build && npm run typecheck && npm test` is what CI runs.
 

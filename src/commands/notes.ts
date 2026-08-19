@@ -11,9 +11,9 @@
  * It talks to the mock server, so it runs end to end today:
  *
  *     npm run mock-server          # terminal 1
- *     npm run kit -- login         # terminal 2
- *     npm run kit -- notes
- *     npm run kit -- notes --status draft --json | jq -r '.notes[].id'
+ *     npm run acme -- login         # terminal 2
+ *     npm run acme -- notes
+ *     npm run acme -- notes --status draft --json | jq -r '.notes[].id'
  *
  * The data is invented. It is not a real service, and deliberately not a public
  * API either — an example that depends on somebody else's endpoint rots the
@@ -23,9 +23,9 @@
  * `npm run rebrand` offers to delete this file and its tests.
  */
 
-import { defineCommand } from '../kit/command.ts';
-import { NotFoundError } from '../kit/errors.ts';
-import { definitionList, plural, table } from '../kit/render.ts';
+import { defineCommand } from '../core/command.ts';
+import { NotFoundError } from '../core/errors.ts';
+import { definitionList, plural, table } from '../core/render.ts';
 import { openSession } from './session.ts';
 
 interface Note {
@@ -69,7 +69,7 @@ export const notesCommand = defineCommand({
 
   async run(ctx) {
     // `require: true` turns "not signed in" into exit code 4 with a "run
-    // `kit login`" hint, instead of an unexplained 401 further down.
+    // `acme login`" hint, instead of an unexplained 401 further down.
     const session = await openSession(ctx, { require: true });
     const [id] = ctx.args;
 

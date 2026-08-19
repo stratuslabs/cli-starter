@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { defineCommand, type ProgramDef } from '../../src/kit/command.ts';
-import { UsageError } from '../../src/kit/errors.ts';
-import { parseInvocation } from '../../src/kit/parse.ts';
-import { GLOBAL_FLAGS } from '../../src/kit/run.ts';
+import { defineCommand, type ProgramDef } from '../../src/core/command.ts';
+import { UsageError } from '../../src/core/errors.ts';
+import { parseInvocation } from '../../src/core/parse.ts';
+import { GLOBAL_FLAGS } from '../../src/core/run.ts';
 
 const list = defineCommand({
   name: 'list',

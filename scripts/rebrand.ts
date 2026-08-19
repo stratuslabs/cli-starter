@@ -8,7 +8,7 @@
  * whole design keeps branding in `src/app.ts` and the manifest, so this script
  * stays small enough to read before you run it.
  *
- * It uses the CLI's own prompt kit, which means running it is also the fastest
+ * It uses the CLI's own prompts, which means running it is also the fastest
  * way to see what the menus feel like.
  *
  * Everything it does is reversible with `git checkout .` — run it on a clean
@@ -18,9 +18,9 @@
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { createInteractivePrompter, createPlainPrompter, type Prompter } from '../src/kit/prompt.ts';
-import { createTheme } from '../src/kit/theme.ts';
-import { detectColorLevel, detectUnicode } from '../src/kit/env.ts';
+import { createInteractivePrompter, createPlainPrompter, type Prompter } from '../src/core/prompt.ts';
+import { createTheme } from '../src/core/theme.ts';
+import { detectColorLevel, detectUnicode } from '../src/core/env.ts';
 import {
   PLACEHOLDER,
   PLACEHOLDER_ENV,

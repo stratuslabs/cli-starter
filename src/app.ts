@@ -4,7 +4,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * Everything that makes this CLI *yours* is here: the binary name, where it
- * keeps its files, and which server it signs in to. Nothing under `src/kit/`
+ * keeps its files, and which server it signs in to. Nothing under `src/core/`
  * knows any of it, which is what lets you pull framework improvements from
  * upstream without re-applying your branding every time.
  *
@@ -12,9 +12,9 @@
  * few answers. You can also just edit it by hand — it is short on purpose.
  */
 
-import type { AuthProvider } from './kit/auth/provider.ts';
-import type { FlagBag } from './kit/context.ts';
-import { CLI_VERSION } from './kit/version.ts';
+import type { AuthProvider } from './core/auth/provider.ts';
+import type { FlagBag } from './core/context.ts';
+import { CLI_VERSION } from './core/version.ts';
 
 export interface AppConfig {
   /** The binary name, exactly as typed. Appears throughout help and errors. */
@@ -35,7 +35,7 @@ export interface AppConfig {
 
 /**
  * The demo configuration points at a local mock server (`test/support/`), so a
- * freshly cloned template can run `kit login` and get all the way through the
+ * freshly cloned template can run `acme login` and get all the way through the
  * browser flow before you have written a line of backend.
  *
  * Override the endpoint with `ACME_BASE_URL` while developing.

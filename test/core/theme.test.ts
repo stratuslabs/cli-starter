@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { detectColorLevel, detectUnicode, isCI, type TtyInfo } from '../../src/kit/env.ts';
-import { createTheme, stringWidth, stripAnsi } from '../../src/kit/theme.ts';
-import { padEnd, table, truncate, wrapText } from '../../src/kit/render.ts';
+import { detectColorLevel, detectUnicode, isCI, type TtyInfo } from '../../src/core/env.ts';
+import { createTheme, stringWidth, stripAnsi } from '../../src/core/theme.ts';
+import { padEnd, table, truncate, wrapText } from '../../src/core/render.ts';
 
 const tty = (overrides: Partial<TtyInfo> = {}): TtyInfo => ({
   stdoutIsTty: true,

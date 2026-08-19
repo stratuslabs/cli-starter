@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { defaultSleep, deviceLogin } from '../../src/kit/auth/device.ts';
-import { EXIT, InterruptedError, type NetworkError } from '../../src/kit/errors.ts';
+import { defaultSleep, deviceLogin } from '../../src/core/auth/device.ts';
+import { EXIT, InterruptedError, type NetworkError } from '../../src/core/errors.ts';
 
 const activeTimers = (): number =>
   process.getActiveResourcesInfo().filter((resource) => resource === 'Timeout').length;

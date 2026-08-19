@@ -1,13 +1,13 @@
 /**
- * `kit whoami` — who am I signed in as, and where.
+ * `acme whoami` — who am I signed in as, and where.
  *
  * Deliberately answers "where" as well as "who". With profiles and an
  * overridable endpoint, "signed in as Dana" is only half the story — the other
  * half is which server said so.
  */
 
-import { defineCommand } from '../kit/command.ts';
-import { definitionList } from '../kit/render.ts';
+import { defineCommand } from '../core/command.ts';
+import { definitionList } from '../core/render.ts';
 import { fetchIdentity, openSession } from './session.ts';
 
 export const whoamiCommand = defineCommand({

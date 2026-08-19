@@ -12,9 +12,9 @@ import { readFile, stat } from 'node:fs/promises';
 import { after, before, test } from 'node:test';
 
 import { APP, baseUrlEnvName, tokenEnvName } from '../src/app.ts';
-import { credentialsPath, saveCredential, type CredentialsFile } from '../src/kit/credentials.ts';
-import { EXIT } from '../src/kit/errors.ts';
-import { stripAnsi } from '../src/kit/theme.ts';
+import { credentialsPath, saveCredential, type CredentialsFile } from '../src/core/credentials.ts';
+import { EXIT } from '../src/core/errors.ts';
+import { stripAnsi } from '../src/core/theme.ts';
 import { createTempHome, run } from './support/harness.ts';
 import { startMockAuthServer, type MockAuthServer } from './support/mock-auth-server.ts';
 

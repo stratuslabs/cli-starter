@@ -27,8 +27,8 @@ The rest of this page is the same thing, explained.
 `src/commands/posts.ts`:
 
 ```ts
-import { defineCommand } from '../kit/command.ts';
-import { table, plural } from '../kit/render.ts';
+import { defineCommand } from '../core/command.ts';
+import { table, plural } from '../core/render.ts';
 import { openSession } from './session.ts';
 
 export const postsCommand = defineCommand({
@@ -87,7 +87,7 @@ In `src/main.ts`, import it and add it to `commands`. That array is the whole
 registry — help, dispatch, and completions all read from it.
 
 That is why there is no separate help text to update: a command that is
-registered is documented, and `test/kit/help.test.ts` fails the build if a flag
+registered is documented, and `test/core/help.test.ts` fails the build if a flag
 or argument has no summary.
 
 ## The rules
@@ -110,7 +110,7 @@ produces nothing useful under `--json`.
 terminal in raw mode with a hidden cursor.
 
 ```ts
-import { NotFoundError } from '../kit/errors.ts';
+import { NotFoundError } from '../core/errors.ts';
 
 throw new NotFoundError('post.not_found', `No post with id ${id}.`, {
   hint: `Run \`${ctx.program.name} posts\` to see the ids you have.`,

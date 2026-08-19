@@ -11,18 +11,18 @@ archaeology project.
 ## The line
 
 ```
-src/kit/        upstream's.  Do not edit.
+src/core/       upstream's.  Do not edit.
 src/commands/   yours.       Upstream will never touch these.
 src/app.ts      yours.       Written once by `npm run rebrand`.
 src/main.ts     yours.       A registry; upstream only adds to the global flags.
 ```
 
-Keeping `src/kit/` pristine is the whole mechanism. If you edit it, you own the
+Keeping `src/core/` pristine is the whole mechanism. If you edit it, you own the
 merge conflict forever. When you need behaviour it does not offer, add a
 parameter and send the change upstream — that is the same rule the framework
 applies to itself.
 
-## Getting a newer kit
+## Getting a newer core
 
 Once, to set up the remote:
 
@@ -35,15 +35,15 @@ Then, whenever you want the newer framework:
 
 ```bash
 git fetch upstream
-git checkout -b kit-update
-git checkout upstream/main -- src/kit test/kit test/support
+git checkout -b core-update
+git checkout upstream/main -- src/core test/core test/support
 npm run build && npm run typecheck && npm test
 ```
 
 Your commands, your branding, and your tests are untouched; only the framework
 moves. Review the diff, run the suite, merge.
 
-If `test/kit` fails after an update, read the failure before "fixing" it —
+If `test/core` fails after an update, read the failure before "fixing" it —
 upstream tests encode invariants (credential permissions, colour gating,
 endpoint binding) that are usually right.
 
@@ -54,7 +54,7 @@ endpoint binding) that are usually right.
   catches the collision through the help-coverage tests.
 - **`RunContext` gains a field.** Additive, so existing commands compile
   unchanged.
-- **A `kit/` module is renamed.** Rare, and called out in the release notes.
+- **A `core/` module is renamed.** Rare, and called out in the release notes.
   Your `src/commands/` imports are the only thing to update.
 
 ## If you would rather not track upstream

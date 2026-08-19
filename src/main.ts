@@ -7,9 +7,9 @@
  */
 
 import { APP, BASE_URL_FLAG, baseUrlEnvName } from './app.ts';
-import type { ProgramDef } from './kit/command.ts';
-import type { CliEnvironment, CliStreams } from './kit/env.ts';
-import { GLOBAL_FLAGS, runCli } from './kit/run.ts';
+import type { ProgramDef } from './core/command.ts';
+import type { CliEnvironment, CliStreams } from './core/env.ts';
+import { GLOBAL_FLAGS, runCli } from './core/run.ts';
 
 import { demoCommand } from './commands/demo.ts';
 import { doctorCommand } from './commands/doctor.ts';

@@ -1,5 +1,5 @@
 /**
- * `kit doctor` — the command people run when something is wrong, so a wrong
+ * `acme doctor` — the command people run when something is wrong, so a wrong
  * answer here costs more than a wrong answer anywhere else.
  */
 
@@ -9,9 +9,9 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { APP } from '../src/app.ts';
-import { saveCredential } from '../src/kit/credentials.ts';
-import { EXIT } from '../src/kit/errors.ts';
-import { stripAnsi } from '../src/kit/theme.ts';
+import { saveCredential } from '../src/core/credentials.ts';
+import { EXIT } from '../src/core/errors.ts';
+import { stripAnsi } from '../src/core/theme.ts';
 import { createTempHome, run } from './support/harness.ts';
 
 test('--offline still reports that nobody is signed in', async () => {

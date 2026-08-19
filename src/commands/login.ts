@@ -1,5 +1,5 @@
 /**
- * `kit login` — sign in.
+ * `acme login` — sign in.
  *
  * Three flows, tried in the order that asks least of the user:
  *
@@ -14,15 +14,15 @@
  */
 
 import { APP, resolveAuthProvider, resolveBaseUrl, tokenEnvName } from '../app.ts';
-import { canOpenBrowser, deviceLogin } from '../kit/auth/device.ts';
-import { loopbackLogin } from '../kit/auth/loopback.ts';
-import type { AuthResult } from '../kit/auth/provider.ts';
-import { defineCommand } from '../kit/command.ts';
-import type { RunContext } from '../kit/context.ts';
-import { saveCredential, type StoredCredential } from '../kit/credentials.ts';
-import { AuthError, CliError, InterruptedError, isInterruption } from '../kit/errors.ts';
-import { HttpClient } from '../kit/http.ts';
-import { box } from '../kit/render.ts';
+import { canOpenBrowser, deviceLogin } from '../core/auth/device.ts';
+import { loopbackLogin } from '../core/auth/loopback.ts';
+import type { AuthResult } from '../core/auth/provider.ts';
+import { defineCommand } from '../core/command.ts';
+import type { RunContext } from '../core/context.ts';
+import { saveCredential, type StoredCredential } from '../core/credentials.ts';
+import { AuthError, CliError, InterruptedError, isInterruption } from '../core/errors.ts';
+import { HttpClient } from '../core/http.ts';
+import { box } from '../core/render.ts';
 import { describeIdentity, fetchIdentity, openSession, profileName, type Identity } from './session.ts';
 
 /** Read the whole of stdin, for `--token -`. */
@@ -113,8 +113,8 @@ export const loginCommand = defineCommand({
   description:
     'Signs in through your browser by default. On a machine without one — an SSH ' +
     'session, a container — a device code is used instead. The token is stored in ' +
-    '~/.kit/credentials.json with 0600 permissions and is only ever sent to the ' +
-    'endpoint it was issued for.',
+    `~/.${APP.brand}/credentials.json with 0600 permissions and is only ever sent ` +
+    'to the endpoint it was issued for.',
   flags: {
     device: {
       type: 'boolean',
