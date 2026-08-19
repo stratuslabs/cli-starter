@@ -16,7 +16,8 @@
  *   sent to another. See `resolveCredential`.
  */
 
-import { chmod, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { chmod, mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { AuthError, ConfigError } from './errors.ts';
@@ -50,6 +51,13 @@ export interface CredentialsFile {
 
 const EMPTY: CredentialsFile = { version: 1, profiles: {} };
 
+const LOCK_NAME = 'credentials.lock';
+const LOCK_STALE_AFTER_MS = 10 * 60 * 1000;
+const LOCK_ATTEMPTS = 40;
+
+const sleep = async (milliseconds: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 export const credentialsDir = (homeDir: string, brand: string): string =>
   join(homeDir, `.${brand}`);
 
@@ -72,6 +80,66 @@ const ensureDir = async (path: string): Promise<void> => {
     // protection.
   });
 };
+
+/**
+ * Acquire a process-wide credential-store lock using the portable `open(wx)`
+ * primitive. The long stale threshold makes recovery useful after a crash
+ * without treating an ordinarily slow filesystem operation as abandoned.
+ */
+const acquireCredentialsLock = async (directory: string): Promise<() => Promise<void>> => {
+  const path = join(directory, LOCK_NAME);
+
+  for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt += 1) {
+    try {
+      const handle = await open(path, 'wx', 0o600);
+      try {
+        await handle.writeFile(`${process.pid}\n`, 'utf8');
+      } catch (error) {
+        await handle.close().catch(() => {});
+        await unlink(path).catch(() => {});
+        throw error;
+      }
+      await handle.close();
+      return async () => {
+        await unlink(path).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== 'ENOENT') throw error;
+        });
+      };
+    } catch (error) {
+      const filesystemError = error as NodeJS.ErrnoException;
+      if (filesystemError.code !== 'EEXIST') {
+        throw new ConfigError('credentials.lock_failed', `Could not lock ${path}.`, {
+          cause: error,
+        });
+      }
+
+      try {
+        const lockStat = await stat(path);
+        if (Date.now() - lockStat.mtimeMs > LOCK_STALE_AFTER_MS) {
+          await unlink(path);
+          continue;
+        }
+      } catch (staleError) {
+        if ((staleError as NodeJS.ErrnoException).code === 'ENOENT') continue;
+      }
+
+      // Bounded, mildly increasing backoff avoids a thundering herd while
+      // keeping an interactive command responsive.
+      await sleep(20 + attempt * 5);
+    }
+  }
+
+  throw new ConfigError(
+    'credentials.lock_timeout',
+    `Could not acquire the credential lock at ${path}.`,
+    { hint: 'Wait for the other CLI process to finish, then try again.' },
+  );
+};
+
+/** @internal Test seam for deterministic scheduling of concurrent mutations. */
+export const credentialMutationTestHooks: {
+  afterLoad?: (() => Promise<void>) | undefined;
+} = {};
 
 export const loadCredentials = async (
   homeDir: string,
@@ -115,28 +183,39 @@ export const writeCredentials = async (
   const directory = credentialsDir(homeDir, brand);
   await ensureDir(directory);
 
-  const path = credentialsPath(homeDir, brand);
-  const temporary = `${path}.${process.pid}.tmp`;
-
-  await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, {
-    encoding: 'utf8',
-    mode: 0o600,
-  });
-  // Belt and braces: `mode` above is subject to the umask and is ignored
-  // entirely if the temp file somehow already existed.
-  await chmod(temporary, 0o600);
-
+  const release = await acquireCredentialsLock(directory);
   try {
-    await rename(temporary, path);
-  } catch (error) {
-    await unlink(temporary).catch(() => {});
-    throw error;
+    await writeCredentialsUnlocked(homeDir, brand, file);
+  } finally {
+    await release();
   }
+};
 
-  // `rename` preserves the source's mode, but if `path` pre-existed with looser
-  // permissions on a filesystem that merges rather than replaces, this is the
-  // guarantee that matters.
-  await chmod(path, 0o600);
+const writeCredentialsUnlocked = async (
+  homeDir: string,
+  brand: string,
+  file: CredentialsFile,
+): Promise<void> => {
+  const directory = credentialsDir(homeDir, brand);
+
+  const path = credentialsPath(homeDir, brand);
+  const temporary = join(directory, `.credentials.${process.pid}.${randomUUID()}.tmp`);
+  let renamed = false;
+  try {
+    await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
+    // Belt and braces: `mode` above is subject to the umask.
+    await chmod(temporary, 0o600);
+    await rename(temporary, path);
+    renamed = true;
+
+    // Keep the lock through this final hardening step.
+    await chmod(path, 0o600);
+  } finally {
+    if (!renamed) await unlink(temporary).catch(() => {});
+  }
 };
 
 /** Add or replace one profile, leaving every other profile untouched. */
@@ -146,9 +225,17 @@ export const saveCredential = async (
   profile: string,
   credential: StoredCredential,
 ): Promise<void> => {
-  const file = await loadCredentials(homeDir, brand);
-  file.profiles[profile] = credential;
-  await writeCredentials(homeDir, brand, file);
+  const directory = credentialsDir(homeDir, brand);
+  await ensureDir(directory);
+  const release = await acquireCredentialsLock(directory);
+  try {
+    const file = await loadCredentials(homeDir, brand);
+    await credentialMutationTestHooks.afterLoad?.();
+    file.profiles[profile] = credential;
+    await writeCredentialsUnlocked(homeDir, brand, file);
+  } finally {
+    await release();
+  }
 };
 
 /** Returns whether anything was removed, so `logout` can report honestly. */
@@ -157,11 +244,19 @@ export const deleteCredential = async (
   brand: string,
   profile: string,
 ): Promise<boolean> => {
-  const file = await loadCredentials(homeDir, brand);
-  if (file.profiles[profile] === undefined) return false;
-  delete file.profiles[profile];
-  await writeCredentials(homeDir, brand, file);
-  return true;
+  const directory = credentialsDir(homeDir, brand);
+  await ensureDir(directory);
+  const release = await acquireCredentialsLock(directory);
+  try {
+    const file = await loadCredentials(homeDir, brand);
+    await credentialMutationTestHooks.afterLoad?.();
+    if (file.profiles[profile] === undefined) return false;
+    delete file.profiles[profile];
+    await writeCredentialsUnlocked(homeDir, brand, file);
+    return true;
+  } finally {
+    await release();
+  }
 };
 
 export interface ResolveCredentialOptions {

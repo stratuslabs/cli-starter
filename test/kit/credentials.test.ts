@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdir, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readdir, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
 import {
   credentialsPath,
+  credentialMutationTestHooks,
   deleteCredential,
   loadCredentials,
   resolveCredential,
@@ -86,6 +87,84 @@ test('saving one profile does not clobber the others', async () => {
     assert.deepEqual(Object.keys(file.profiles).sort(), ['default', 'staging']);
     assert.equal(file.profiles['default']?.token, 'a');
     assert.equal(file.profiles['staging']?.token, 'b');
+  } finally {
+    await home.cleanup();
+  }
+});
+
+test('concurrent mutations serialize their reads so both changes survive', async () => {
+  const home = await createTempHome();
+  const pauses: Array<() => void> = [];
+  credentialMutationTestHooks.afterLoad = () =>
+    new Promise<void>((resolve) => {
+      pauses.push(resolve);
+    });
+
+  try {
+    const first = saveCredential(
+      home.path,
+      'kit',
+      'default',
+      credential('https://api.example.com', 'a'),
+    );
+    while (pauses.length < 1) await new Promise((resolve) => setTimeout(resolve, 1));
+
+    const second = saveCredential(
+      home.path,
+      'kit',
+      'staging',
+      credential('https://staging.example.com', 'b'),
+    );
+    // The second mutation must still be waiting on the lock, not reading the
+    // same empty snapshot as the first mutation.
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(pauses.length, 1);
+
+    pauses[0]?.();
+    while (pauses.length < 2) await new Promise((resolve) => setTimeout(resolve, 1));
+    pauses[1]?.();
+    await Promise.all([first, second]);
+
+    const stored = await loadCredentials(home.path, 'kit');
+    assert.deepEqual(Object.keys(stored.profiles).sort(), ['default', 'staging']);
+  } finally {
+    credentialMutationTestHooks.afterLoad = undefined;
+    for (const resume of pauses) resume();
+    await home.cleanup();
+  }
+});
+
+test('a failed write removes its temporary file and releases the lock', async () => {
+  const home = await createTempHome();
+  try {
+    const directory = join(home.path, '.kit');
+    await mkdir(credentialsPath(home.path, 'kit'), { recursive: true });
+
+    await assert.rejects(() =>
+      saveCredential(home.path, 'kit', 'default', credential('https://api.example.com')),
+    );
+    assert.deepEqual(await readdir(directory), ['credentials.json']);
+
+    await rm(credentialsPath(home.path, 'kit'), { recursive: true });
+    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com'));
+    assert.deepEqual(await readdir(directory), ['credentials.json']);
+  } finally {
+    await home.cleanup();
+  }
+});
+
+test('an abandoned old lock is recovered', async () => {
+  const home = await createTempHome();
+  try {
+    const directory = join(home.path, '.kit');
+    const lock = join(directory, 'credentials.lock');
+    await mkdir(directory, { recursive: true });
+    await writeFile(lock, 'no-longer-running\n', { mode: 0o600 });
+    const old = new Date(Date.now() - 11 * 60 * 1000);
+    await utimes(lock, old, old);
+
+    await saveCredential(home.path, 'kit', 'default', credential('https://api.example.com'));
+    assert.deepEqual(await readdir(directory), ['credentials.json']);
   } finally {
     await home.cleanup();
   }
