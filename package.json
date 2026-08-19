@@ -1,5 +1,5 @@
 {
-  "name": "@stratuslabs/cli-kit",
+  "name": "@stratuslabs/cli-starter",
   "version": "0.1.0",
   "description": "A polished CLI template: browser login, arrow-key menus, derived help, and scriptable output.",
   "type": "module",

@@ -57,10 +57,10 @@ export const APP: AppConfig = {
     identityUrl: `${DEFAULT_BASE_URL}/api/v1/cli/identity`,
     revokeUrl: `${DEFAULT_BASE_URL}/api/v1/cli/revoke`,
     tokenHelpUrl: `${DEFAULT_BASE_URL}/settings/tokens`,
-    clientId: 'cli-kit-demo',
+    clientId: 'cli-starter-demo',
     scopes: ['read', 'write'],
   },
-  footer: 'Built from stratuslabs/cli-kit. Start by editing src/app.ts.',
+  footer: 'Built from stratuslabs/cli-starter. Start by editing src/app.ts.',
 };
 
 /** The global flag naming the API endpoint. Declared once, in main.ts. */

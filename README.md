@@ -1,4 +1,4 @@
-# cli-kit
+# cli-starter
 
 A template for building command-line tools that feel finished.
 
@@ -66,7 +66,7 @@ the registry and fails if anything is undocumented. There is no separate help
 string to forget to update.
 
 **Output a script can use.** `--json` puts structured data on stdout and
-nothing else — prompts, spinners, and warnings all go to stderr. `cli list
+nothing else — prompts, spinners, and warnings all go to stderr. `kit list
 --json | jq` works, always.
 
 **Errors that say what to do.** Every failure carries a `hint`, and each kind

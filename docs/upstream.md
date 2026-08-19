@@ -27,7 +27,7 @@ applies to itself.
 Once, to set up the remote:
 
 ```bash
-git remote add upstream https://github.com/stratuslabs/cli-kit.git
+git remote add upstream https://github.com/stratuslabs/cli-starter.git
 git fetch upstream
 ```
 

@@ -78,7 +78,7 @@ export interface HarnessResult {
 
 /** A disposable `$HOME`, so credential tests never see each other's files. */
 export const createTempHome = async (): Promise<{ path: string; cleanup: () => Promise<void> }> => {
-  const path = await mkdtemp(join(tmpdir(), 'cli-kit-test-'));
+  const path = await mkdtemp(join(tmpdir(), 'cli-starter-test-'));
   return { path, cleanup: () => rm(path, { recursive: true, force: true }) };
 };
 
