@@ -8,7 +8,7 @@
  * could revoke it.
  */
 
-import { APP } from '../app.ts';
+import { APP, tokenEnvName } from '../app.ts';
 import { defineCommand } from '../kit/command.ts';
 import { deleteCredential } from '../kit/credentials.ts';
 import { openSession, profileName } from './session.ts';
@@ -61,13 +61,29 @@ export const logoutCommand = defineCommand({
       }
     }
 
-    const removed = await deleteCredential(ctx.env.homeDir, APP.brand, profile);
+    // Only the credential that was actually signed out.
+    //
+    // With $TOKEN set it is the environment's, and the saved profile was
+    // never used — deleting it would remove a credential the user did not
+    // sign out of *and* leave it live on the server with no local copy left
+    // to revoke it from. The reverse of what this command is for.
+    const removed =
+      session.tokenOrigin === 'profile'
+        ? await deleteCredential(ctx.env.homeDir, APP.brand, profile)
+        : false;
 
     ctx.say(ctx.theme.ok(revoked ? 'Signed out and the token was revoked.' : 'Signed out.'));
+    if (session.tokenOrigin === 'env') {
+      ctx.say(
+        ctx.theme.muted(
+          `  That was the token in $${tokenEnvName(APP)}. Any saved sign-in for this profile is untouched — unset the variable and run this again to remove it too.`,
+        ),
+      );
+    }
     if (!revoked && ctx.flags.boolean('local')) {
       ctx.say(ctx.theme.muted('  The token was not revoked — it will keep working until it expires.'));
     }
-    ctx.emit({ ok: true, profile, revoked, removed });
+    ctx.emit({ ok: true, profile, revoked, removed, source: session.tokenSource });
     return;
   },
 });

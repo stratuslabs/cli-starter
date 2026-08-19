@@ -202,7 +202,17 @@ export class HttpClient {
       throw errorForTransport(error, this.options.baseUrl, timeout.aborted);
     }
 
-    const text = await response.text();
+    // Reading the body is still the transport, and it is where a stall, a
+    // dropped connection, or a Ctrl-C after the headers arrived actually
+    // lands — fetch has already resolved by then. Outside this try it
+    // escaped as an unclassified error and exited 1.
+    let text: string;
+    try {
+      text = await response.text();
+    } catch (error) {
+      throw errorForTransport(error, this.options.baseUrl, timeout.aborted);
+    }
+
     let payload: unknown = undefined;
     if (text !== '') {
       try {

@@ -13,7 +13,34 @@ stable and should not be reassigned.
 | `5` | network | The server could not be reached, timed out, or returned a 5xx. |
 | `6` | not found | The named thing does not exist. |
 | `7` | conflict | The named thing exists but is in the wrong state for this operation. |
-| `130` | interrupted | Ctrl-C. The shell convention is 128 + SIGINT. Includes a request cancelled mid-flight — an abort and a lapsed deadline reach `fetch` in the same shape, and `HttpClient` tells them apart so a cancellation is not reported as a `5`. |
+| `130` | interrupted | Ctrl-C. The shell convention is 128 + SIGINT. Includes a request cancelled mid-flight, at any point in it — see below. |
+
+## Cancellation survives every layer
+
+`130` is the code most easily lost, because a cancellation passes through
+several layers that each classify errors into their own vocabulary, and each
+one will happily absorb it: an abort reported as "could not reach the server"
+is a network failure the user did not have, and one swallowed by a
+save-anyway branch is a success they were actively trying to prevent.
+
+So every such layer asks `isInterruption(error, signal)` from `kit/errors.ts`
+before applying its own classification. The signal is a parameter because the
+evidence differs by layer — above the transport the error is already an
+`InterruptedError`, while at the transport boundary it is still a bare
+`AbortError`, indistinguishable from a lapsed deadline by shape alone, so the
+caller's signal is what says which happened.
+
+The places that matter, all of which got this wrong at least once:
+
+- the initial `fetch` rejection, and **the response body read** — `fetch`
+  resolves when the headers arrive, so a stall, a dropped connection, or a
+  Ctrl-C after that point surfaces from `response.text()` instead;
+- the device flow's requests, whose polling loop checks the signal around its
+  sleep but not during a request;
+- `login`'s identity probe, which saves the credential when the server is
+  unreachable — a judgement about the server that Ctrl-C is no evidence for.
+
+If you add a layer that catches and reclassifies, it asks the same question.
 
 The split that matters most in practice is `4` versus `5`: "your credentials
 are bad, sign in again" and "the network is down, retry later" call for

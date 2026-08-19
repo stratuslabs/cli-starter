@@ -133,6 +133,25 @@ export class InterruptedError extends CliError {
 }
 
 /**
+ * Was this a cancellation?
+ *
+ * Asked wherever an error is classified, because a cancellation has to
+ * survive every one of those layers to reach the user intact — and it is
+ * exactly the kind of thing each layer helpfully reclassifies into its own
+ * vocabulary. An abort reported as "could not reach the server" is a network
+ * failure the user did not have; one swallowed by a save-anyway branch is a
+ * success they did not ask for.
+ *
+ * `signal` is a parameter because the evidence differs by layer. Above the
+ * transport the error is already an InterruptedError. At the transport
+ * boundary it is still a bare `AbortError`, indistinguishable from a lapsed
+ * deadline by its shape alone — so the caller's signal, not the error, is
+ * what says which one happened.
+ */
+export const isInterruption = (error: unknown, signal?: AbortSignal | undefined): boolean =>
+  error instanceof InterruptedError || signal?.aborted === true;
+
+/**
  * Raised when something needs an answer but there is nobody to ask —
  * piped stdin, CI, `--quiet`.
  *

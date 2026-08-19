@@ -11,9 +11,10 @@ import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { after, before, test } from 'node:test';
 
-import { APP, baseUrlEnvName } from '../src/app.ts';
+import { APP, baseUrlEnvName, tokenEnvName } from '../src/app.ts';
 import { credentialsPath, saveCredential, type CredentialsFile } from '../src/kit/credentials.ts';
 import { EXIT } from '../src/kit/errors.ts';
+import { stripAnsi } from '../src/kit/theme.ts';
 import { createTempHome, run } from './support/harness.ts';
 import { startMockAuthServer, type MockAuthServer } from './support/mock-auth-server.ts';
 
@@ -496,6 +497,95 @@ test('login works when a stored token is bound to another endpoint', async () =>
 
     assert.equal(result.exitCode, EXIT.ok, result.output.plain);
     assert.equal((await readStore(home.path)).profiles['default']?.baseUrl, server.url);
+  } finally {
+    await home.cleanup();
+  }
+});
+
+test('logout with the token environment variable set leaves the saved profile alone', async () => {
+  const home = await createTempHome();
+  try {
+    // Both credentials exist and are valid. The environment one is what
+    // openSession selects, so it is the one that gets revoked.
+    server.issuedTokens.add('tok_from_env');
+    server.issuedTokens.add('tok_saved');
+    await saveCredential(home.path, APP.brand, 'default', {
+      token: 'tok_saved',
+      baseUrl: server.url,
+      createdAt: '2025-12-01T00:00:00.000Z',
+    });
+
+    const result = await run({
+      argv: ['logout'],
+      processEnv: { ...env(), [tokenEnvName(APP)]: 'tok_from_env' },
+      homeDir: home.path,
+      fetch: globalThis.fetch,
+    });
+
+    assert.equal(result.exitCode, EXIT.ok, result.output.plain);
+    assert.equal(server.issuedTokens.has('tok_from_env'), false);
+
+    // Deleting the stored one would remove a credential the user never signed
+    // out of — and leave it live on the server with no local copy left to
+    // revoke it from, which is the opposite of what this command is for.
+    assert.equal((await readStore(home.path)).profiles['default']?.token, 'tok_saved');
+    assert.equal(server.issuedTokens.has('tok_saved'), true);
+    assert.match(stripAnsi(result.output.plain), new RegExp(tokenEnvName(APP)));
+  } finally {
+    await home.cleanup();
+  }
+});
+
+test('logout without an environment token still removes the saved credential', async () => {
+  const home = await createTempHome();
+  try {
+    // The other half, so the guard cannot just stop deleting entirely.
+    server.issuedTokens.add('tok_only');
+    await saveCredential(home.path, APP.brand, 'default', {
+      token: 'tok_only',
+      baseUrl: server.url,
+      createdAt: '2025-12-01T00:00:00.000Z',
+    });
+
+    const result = await run({
+      argv: ['logout'],
+      processEnv: env(),
+      homeDir: home.path,
+      fetch: globalThis.fetch,
+    });
+
+    assert.equal(result.exitCode, EXIT.ok, result.output.plain);
+    assert.equal(server.issuedTokens.has('tok_only'), false);
+    assert.equal((await readStore(home.path)).profiles['default'], undefined);
+  } finally {
+    await home.cleanup();
+  }
+});
+
+test('cancelling the verification does not save the token and report success', async () => {
+  const home = await createTempHome();
+  try {
+    // Save-on-unreachable is a judgement about the server. Ctrl-C is not
+    // evidence about the server, and treating it as such saved the credential
+    // and exited 0 — the one outcome the user was trying to prevent.
+    const controller = new AbortController();
+    const result = await run({
+      argv: ['login', '--token', '-'],
+      stdin: ['tok_pasted'],
+      processEnv: env(),
+      homeDir: home.path,
+      signal: controller.signal,
+      fetch: (_input, init) => {
+        // The identity probe is the only request this flow makes.
+        controller.abort();
+        return Promise.reject(
+          init?.signal?.reason ?? Object.assign(new Error('aborted'), { name: 'AbortError' }),
+        );
+      },
+    });
+
+    assert.equal(result.exitCode, EXIT.interrupted, result.output.plain);
+    await assert.rejects(readStore(home.path));
   } finally {
     await home.cleanup();
   }

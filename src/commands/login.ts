@@ -20,7 +20,7 @@ import type { AuthResult } from '../kit/auth/provider.ts';
 import { defineCommand } from '../kit/command.ts';
 import type { RunContext } from '../kit/context.ts';
 import { saveCredential, type StoredCredential } from '../kit/credentials.ts';
-import { AuthError, CliError } from '../kit/errors.ts';
+import { AuthError, CliError, InterruptedError, isInterruption } from '../kit/errors.ts';
 import { HttpClient } from '../kit/http.ts';
 import { box } from '../kit/render.ts';
 import { describeIdentity, fetchIdentity, openSession, profileName, type Identity } from './session.ts';
@@ -224,6 +224,12 @@ export const loginCommand = defineCommand({
             cause: error,
           });
         }
+        // Save-on-unreachable is a judgement about the *server*, and Ctrl-C
+        // is not evidence about the server. Left here, cancelling the probe
+        // saved the credential and reported success — the one outcome the
+        // user was actively trying to prevent.
+        if (isInterruption(error, ctx.signal)) throw new InterruptedError();
+
         ctx.say(ctx.theme.warn('Saved, but the account could not be confirmed just now.'));
         ctx.say(ctx.theme.muted(`  ${error instanceof Error ? error.message : String(error)}`));
       }

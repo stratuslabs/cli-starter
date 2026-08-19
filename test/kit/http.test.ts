@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { AuthError, ConflictError, NetworkError, NotFoundError } from '../../src/kit/errors.ts';
+import {
+  AuthError,
+  ConflictError,
+  EXIT,
+  InterruptedError,
+  NetworkError,
+  NotFoundError,
+} from '../../src/kit/errors.ts';
 import { formatApiError, HttpClient } from '../../src/kit/http.ts';
 
 const client = (handler: typeof globalThis.fetch): HttpClient =>
@@ -105,4 +112,105 @@ test('anonymous requests omit the Authorization header', async () => {
   assert.equal(auth, 'Bearer tok_1');
   await authed.get('/b', { anonymous: true });
   assert.equal(auth, null);
+});
+
+test("a caller's abort is a cancellation, not a timeout", async () => {
+  // Ctrl-C reaches fetch as an AbortError, the same shape a lapsed deadline
+  // produces. Reporting it as a timeout prints a network failure that did not
+  // happen and exits 5 where every script checks for 130.
+  const controller = new AbortController();
+  const client = new HttpClient({
+    baseUrl: 'https://api.example.test',
+    fetch: (_input, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+        });
+      }),
+    userAgent: 'test/1.0',
+    signal: controller.signal,
+  });
+
+  const pending = client.get('/slow');
+  controller.abort();
+
+  await assert.rejects(pending, (error: unknown) => {
+    assert.ok(error instanceof InterruptedError, `got ${String(error)}`);
+    assert.equal((error as InterruptedError).exitCode, EXIT.interrupted);
+    return true;
+  });
+});
+
+test('a lapsed deadline is still a timeout', async () => {
+  // The other half: without it, the fix above could just relabel every abort.
+  const client = new HttpClient({
+    baseUrl: 'https://api.example.test',
+    fetch: (_input, init) =>
+      new Promise((_resolve, reject) => {
+        // A referenced timer stands in for the open socket a real request
+        // holds. AbortSignal.timeout's own timer is unref'd, so without one
+        // the process exits before the deadline it is waiting for.
+        const holdOpen = setTimeout(() => reject(new Error('never aborted')), 5_000);
+        init?.signal?.addEventListener('abort', () => {
+          clearTimeout(holdOpen);
+          reject(init.signal?.reason);
+        });
+      }),
+    userAgent: 'test/1.0',
+    timeoutMs: 5,
+  });
+
+  await assert.rejects(client.get('/slow'), (error: unknown) => {
+    assert.ok(error instanceof NetworkError, `got ${String(error)}`);
+    assert.equal((error as NetworkError).code, 'timeout');
+    return true;
+  });
+});
+
+test('a failure while reading the body is still classified as transport', async () => {
+  // fetch() resolves once the headers arrive, so a stall or a dropped
+  // connection lands on response.text() instead. Outside the transport catch
+  // it escaped as an unclassified error and exited 1.
+  const client = new HttpClient({
+    baseUrl: 'https://api.example.test',
+    fetch: async () =>
+      new Response(
+        new ReadableStream({
+          pull() {
+            throw Object.assign(new Error('connection reset'), { code: 'ECONNRESET' });
+          },
+        }),
+      ),
+    userAgent: 'test/1.0',
+  });
+
+  await assert.rejects(client.get('/thing'), (error: unknown) => {
+    assert.ok(error instanceof NetworkError, `got ${String(error)}`);
+    assert.equal((error as NetworkError).exitCode, EXIT.network);
+    return true;
+  });
+});
+
+test('a cancellation while reading the body is a cancellation', async () => {
+  // The same path, but the user pressed Ctrl-C after the headers arrived.
+  const controller = new AbortController();
+  const client = new HttpClient({
+    baseUrl: 'https://api.example.test',
+    fetch: async () =>
+      new Response(
+        new ReadableStream({
+          pull() {
+            controller.abort();
+            throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+          },
+        }),
+      ),
+    userAgent: 'test/1.0',
+    signal: controller.signal,
+  });
+
+  await assert.rejects(client.get('/thing'), (error: unknown) => {
+    assert.ok(error instanceof InterruptedError, `got ${String(error)}`);
+    return true;
+  });
 });

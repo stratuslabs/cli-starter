@@ -177,6 +177,22 @@ export interface ResolveCredentialOptions {
   now: Date;
 }
 
+export interface ResolvedCredential {
+  token: string;
+  /** For display: the profile name, or the variable that supplied it. */
+  source: string;
+  /**
+   * Where it came from, as data rather than prose.
+   *
+   * `source` is a sentence fragment meant for a human, and a caller that
+   * needs to *act* on the difference must not go parsing it. `logout` is the
+   * caller that needs it: with $TOKEN set it revokes the environment token,
+   * and without this it went on to delete a stored profile credential that
+   * was never used and is now live with no local copy left to revoke it.
+   */
+  origin: 'env' | 'profile';
+}
+
 /**
  * Decide which credential a request may use — the security-critical function
  * in this file.
@@ -194,11 +210,11 @@ export interface ResolveCredentialOptions {
 export const resolveCredential = (
   file: CredentialsFile,
   options: ResolveCredentialOptions,
-): { token: string; source: string } | undefined => {
+): ResolvedCredential | undefined => {
   // An explicit environment variable is the operator saying "use this one",
   // and it is not bound to an endpoint because it was supplied per-invocation.
   if (options.envToken !== undefined && options.envToken.value !== '') {
-    return { token: options.envToken.value, source: `$${options.envToken.name}` };
+    return { token: options.envToken.value, source: `$${options.envToken.name}`, origin: 'env' };
   }
 
   const stored = file.profiles[options.profile];
@@ -212,7 +228,7 @@ export const resolveCredential = (
   }
 
   if (sameOrigin(stored.baseUrl, options.baseUrl)) {
-    return { token: stored.token, source: `profile "${options.profile}"` };
+    return { token: stored.token, source: `profile "${options.profile}"`, origin: 'profile' };
   }
 
   if (!options.baseUrlTrusted) {

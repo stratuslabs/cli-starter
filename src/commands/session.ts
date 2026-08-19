@@ -30,6 +30,12 @@ export interface Session {
   token: string | undefined;
   /** Where the token came from, for `doctor` and for error messages. */
   tokenSource: string | undefined;
+  /**
+   * The same fact as data rather than prose — see `ResolvedCredential`.
+   * A caller that branches on where the token came from uses this; `logout`
+   * is the one that must.
+   */
+  tokenOrigin: 'env' | 'profile' | undefined;
   credentials: CredentialsFile;
 }
 
@@ -81,6 +87,7 @@ export const openSession = async (
     profile,
     token: resolved?.token,
     tokenSource: resolved?.source,
+    tokenOrigin: resolved?.origin,
     credentials,
   };
 };

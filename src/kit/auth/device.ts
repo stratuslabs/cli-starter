@@ -10,7 +10,7 @@
  * device they like*, and the CLI polls until it is approved.
  */
 
-import { AuthError, InterruptedError, NetworkError } from '../errors.ts';
+import { AuthError, InterruptedError, isInterruption, NetworkError } from '../errors.ts';
 import { toAuthResult, type AuthProvider, type AuthResult, type TokenResponse } from './provider.ts';
 
 export const DEVICE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code';
@@ -67,6 +67,11 @@ const postForm = async (
       ...(signal === undefined ? {} : { signal }),
     });
   } catch (error) {
+    // The polling loop checks the signal around its sleep, but an abort that
+    // lands mid-request surfaces here instead — and this is the branch that
+    // would call Ctrl-C a network failure and exit 5.
+    if (isInterruption(error, signal)) throw new InterruptedError();
+
     throw new NetworkError('auth.device_unreachable', 'Could not reach the sign-in server.', {
       cause: error,
     });
