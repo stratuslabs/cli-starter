@@ -2,6 +2,11 @@
 
 A template for building command-line tools that feel finished.
 
+> **Early days.** This is in use — [`@updatespage/cli`](https://github.com/stratuslabs/updates-page-cli)
+> is built on it — but it is new, the API under `src/kit/` may still move, and
+> it has not been through many hands yet. Expect rough edges, and please report
+> them; see [Contributing](#contributing).
+
 Click **Use this template**, run one script, and you have a CLI with browser
 sign-in, arrow-key menus, machine-readable output, and help that cannot drift
 out of date — before you have written a single line of your own.
@@ -168,6 +173,39 @@ tests.
 - [docs/auth-server.md](docs/auth-server.md) — what to build server-side
 - [docs/exit-codes.md](docs/exit-codes.md) — the exit-code contract
 - [docs/upstream.md](docs/upstream.md) — pulling in later improvements
+
+## Contributing
+
+Issues and pull requests are welcome. It is early enough that feedback changes
+the design rather than just the code, so the useful things to send are:
+
+- **"I used this and hit X."** The most valuable report there is. A template is
+  only as good as the first hour someone spends with it, and that hour is the
+  part we cannot see.
+- **A terminal that behaves differently.** Colour, Unicode and key handling are
+  detected, not assumed, and detection is where this kind of code goes wrong.
+  If your terminal, shell, CI runner or SSH setup renders something badly, say
+  which one — that is a bug with a fix, not a quirk.
+- **A flow the auth kit does not cover.** It does authorization-code + PKCE,
+  device code, and a pasted token. If your provider needs something else,
+  open an issue describing the flow before writing code, so the seam it needs
+  gets designed rather than bolted on.
+- **Requests for what to build next.** [docs/upstream.md](docs/upstream.md)
+  lists what is deliberately deferred — shell completions, self-update, the
+  service installer. If one of those is what is stopping you adopting this,
+  that is worth knowing and moves it up.
+
+If you are sending code, two conventions that are load-bearing rather than
+stylistic:
+
+- **New behaviour needs a test that fails without it**, and verifying it
+  actually fails is part of writing it. A test that passes both ways is worse
+  than none, because it reads as covered.
+- **`src/kit/` is the part adopters do not edit**, so changes there are pulled
+  downstream into every CLI built from this. Keep the boundary: framework in
+  `src/kit/`, your own commands in `src/commands/`.
+
+`npm run build && npm run typecheck && npm test` is what CI runs.
 
 ## Licence
 
