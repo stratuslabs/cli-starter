@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src", "test", "scripts"],
+  // Must be re-declared, not inherited. The base config excludes `test` so a
+  // build never emits it, and `exclude` filters whatever `include` matched —
+  // so an inherited `exclude` would silently drop every file this config
+  // exists to check, and typechecking would pass on nothing.
+  "exclude": ["dist"]
+}
